@@ -90,6 +90,8 @@ namespace BombPlane
         {
             Button selectedButton = (Button)GetControlFromPosition(point);
             if (result != BombResult.error)
+            {
+                selectedButton.BackColor = Color.Yellow;
                 switch (result)
                 {
                     case BombResult.head:
@@ -104,6 +106,7 @@ namespace BombPlane
                         selectedButton.Text = "空";
                         break;
                 }
+            }
         }
 
         private void ButtonMouseClickForSelectPlane(object sender, MouseEventArgs e)

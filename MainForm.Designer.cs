@@ -82,7 +82,7 @@
             // toolStripStatusLabel2
             // 
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(1038, 20);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(1077, 20);
             this.toolStripStatusLabel2.Spring = true;
             // 
             // toolStripStatusLabelRight
@@ -152,8 +152,8 @@
             // 
             // UserName
             // 
-            this.UserName.Text = "UserName";
-            this.UserName.Width = 88;
+            this.UserName.Text = "用户名";
+            this.UserName.Width = 57;
             // 
             // IP
             // 

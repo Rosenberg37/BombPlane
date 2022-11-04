@@ -29,10 +29,18 @@ namespace BombPlane
             switch (state)
             {
                 case State.idle:
-                    state = State.preparing;
-                    gridNetworkOurSide.PlaneVisiblibity = true;
-                    MainButtun.Text = "确认飞机位置";
-                    break;
+                    if (_selectedRival == null)
+                    {
+                        MessageBox.Show("请先选择对手");
+                        break;
+                    }
+                    else
+                    {
+                        state = State.preparing;
+                        gridNetworkOurSide.PlaneVisiblibity = true;
+                        MainButtun.Text = "确认飞机位置";
+                        break;
+                    }
                 case State.preparing:
                     state = State.gaming;
                     MainButtun.Text = "轰炸";
