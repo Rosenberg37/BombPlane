@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -19,13 +20,12 @@ namespace BombPlane
         {
             InitializeComponent();
             _planes = new Plane[NumOfPlane] {
-                new Plane(Direction.Up, 2, 0, this),
-                new Plane(Direction.Up, 2, 6, this),
-                new Plane(Direction.Up, 7, 2, this)
+                new Plane(Direction.Up, 2, 0),
+                new Plane(Direction.Up, 2, 6),
+                new Plane(Direction.Up, 7, 2)
             };
             foreach (Control control in tableLayoutPanel.Controls)
-                control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelectButton);
-
+                control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelect);
         }
 
         public Control GetControlFromPosition(int X, int Y)
@@ -38,24 +38,12 @@ namespace BombPlane
             return tableLayoutPanel.GetControlFromPosition(point.X, point.Y);
         }
 
-        public void Clear()
+        public BombResult BombAndDraw(int X, int Y)
         {
-            foreach (Control control in tableLayoutPanel.Controls)
-            {
-                control.BackColor = SystemColors.ControlDark;
-                control.ForeColor = SystemColors.ControlText;
-                int X = tableLayoutPanel.GetColumn(control);
-                int Y = tableLayoutPanel.GetRow(control);
-                String column = X.ToString();
-                String row = ((char)('A' + Y)).ToString();
-                control.Text = row + column;
-            }
-
+            return BombAndDraw(new Point(X, Y));
         }
 
-
-
-        public BombResult Bomb(Point point)
+        public BombResult BombAndDraw(Point point)
         {
             Button selectedButton = (Button)GetControlFromPosition(point);
             if (selectedButton.BackColor != Color.Yellow)
@@ -125,7 +113,7 @@ namespace BombPlane
             _selectedPlane = null;
         }
 
-        private void ButtonMouseClickForSelectButton(object sender, MouseEventArgs e)
+        private void ButtonMouseClickForSelect(object sender, MouseEventArgs e)
         {
             _selectedButton = (Button)sender;
         }
@@ -137,27 +125,180 @@ namespace BombPlane
                 switch (e.KeyChar)
                 {
                     case 'w':
-                        _selectedPlane.Move(Direction.Up);
+                        MovePlane(_selectedPlane, Direction.Up);
                         break;
                     case 's':
-                        _selectedPlane.Move(Direction.Down);
+                        MovePlane(_selectedPlane, Direction.Down);
                         break;
                     case 'a':
-                        _selectedPlane.Move(Direction.Left);
+                        MovePlane(_selectedPlane, Direction.Left);
                         break;
                     case 'd':
-                        _selectedPlane.Move(Direction.Right);
+                        MovePlane(_selectedPlane, Direction.Right);
                         break;
                     case 'r':
-                        _selectedPlane.Rotate();
+                        RotatePlane(_selectedPlane);
                         break;
                 }
             }
         }
 
+        private bool MovePlane(Plane plane, Direction direction)
+        {
+            bool valid = true;
+            Point origin = plane.HeadPoint;
+            ClearGrids();
+            switch (direction)
+            {
+                case Direction.Up:
+                    plane.HeadY -= 1;
+                    break;
+                case Direction.Down:
+                    plane.HeadY += 1;
+                    break;
+                case Direction.Left:
+                    plane.HeadX -= 1;
+                    break;
+                case Direction.Right:
+                    plane.HeadX += 1;
+                    break;
+            }
+            if (!CheckPlaneBounded(plane))
+            {
+                plane.HeadPoint = origin;
+                valid = false;
+            }
+            DrawPlanes();
+            return valid;
+        }
 
-        public int RowCount { get { return tableLayoutPanel.RowCount; } }
-        public int ColumnCount { get { return tableLayoutPanel.ColumnCount; } }
+        private bool RotatePlane(Plane plane)
+        {
+            bool valid = true;
+            Direction origin = plane.direction;
+            ClearGrids();
+            switch (plane.direction)
+            {
+                case Direction.Up:
+                    plane.direction = Direction.Right;
+                    break;
+                case Direction.Down:
+                    plane.direction = Direction.Left;
+                    break;
+                case Direction.Left:
+                    plane.direction = Direction.Up;
+                    break;
+                case Direction.Right:
+                    plane.direction = Direction.Down;
+                    break;
+            }
+            if (!CheckPlaneBounded(plane))
+            {
+                plane.direction = origin;
+                valid = false;
+            }
+            DrawPlanes();
+            return valid;
+        }
+
+        public static bool CheckPlaneBounded(Plane plane)
+        {
+            foreach (var point in plane.BodyPoints)
+                if (point.X < 0 || point.Y < 0 || point.X >= ColumnCount || point.Y >= RowCount)
+                    return false;
+            return true;
+        }
+
+        public static bool CheckPlaneNotConflicted(Plane plane, Plane[] planes)
+        {
+            foreach (Plane otherPlane in planes)
+                if (!ReferenceEquals(otherPlane, plane) && plane.BodyPoints.Intersect(otherPlane.BodyPoints).Count() > 0)
+                    return false;
+            return true;
+        }
+
+        private bool CheckPlaneNotConflicted(Plane plane)
+        {
+            return CheckPlaneNotConflicted(plane, _planes);
+        }
+
+        public static bool CheckPlanesValid(Plane[] planes)
+        {
+            foreach (Plane plane in planes)
+            {
+                if (!CheckPlaneBounded(plane))
+                    return false;
+                if (!CheckPlaneNotConflicted(plane, planes))
+                    return false;
+            }
+            return true;
+        }
+
+        public bool CheckPlanesValid()
+        {
+            return CheckPlanesValid(_planes);
+        }
+
+        private void DrawPlanes()
+        {
+            foreach (Plane plane in _planes)
+            {
+                foreach (var point in plane.BodyPoints)
+                {
+                    Control control = GetControlFromPosition(point.X, point.Y);
+                    if (control.BackColor != Color.OrangeRed)
+                    {
+                        if (control.BackColor == Color.LimeGreen)
+                            control.BackColor = Color.DarkGreen;
+                        else
+                            control.BackColor = Color.LimeGreen;
+                    }
+                }
+            }
+            foreach (Plane plane in _planes)
+            {
+                Control headControl = GetControlFromPosition(plane.HeadPoint);
+                if (headControl.BackColor == Color.LimeGreen)
+                    headControl.BackColor = Color.OrangeRed;
+                else
+                    headControl.BackColor = Color.DarkRed;
+            }
+        }
+
+        public void ClearGrids()
+        {
+            foreach (Control control in tableLayoutPanel.Controls)
+            {
+                control.BackColor = SystemColors.ControlDark;
+                control.ForeColor = SystemColors.ControlText;
+                int X = tableLayoutPanel.GetColumn(control);
+                int Y = tableLayoutPanel.GetRow(control);
+                String column = X.ToString();
+                String row = ((char)('A' + Y)).ToString();
+                control.Text = row + column;
+            }
+        }
+
+        public Point GetSelectBombPoint()
+        {
+            if (_selectedButton.BackColor != SystemColors.ControlDark)
+                throw new DuplicatedSelectionException("The button have been selected.");
+            else
+                return SelectedButtonPoint;
+        }
+
+
+
+        internal Plane[] _planes;
+        internal Plane? _selectedPlane;
+        private Button _selectedButton;
+        public int SelectedButtonX { get { return tableLayoutPanel.GetColumn(_selectedButton); } }
+        public int SelectedButtonY { get { return tableLayoutPanel.GetRow(_selectedButton); } }
+        public Point SelectedButtonPoint { get { return new Point(SelectedButtonX, SelectedButtonY); } }
+
+        public const int NumOfPlane = 3;
+        public const int RowCount = 10;
+        public const int ColumnCount = 10;
 
         private bool _planeVisible;
         public bool PlaneVisiblibity
@@ -172,8 +313,7 @@ namespace BombPlane
 
                 if (value)
                 {
-                    foreach (Plane plane in _planes)
-                        plane.Draw();
+                    DrawPlanes();
                     foreach (Control control in this.tableLayoutPanel.Controls)
                     {
                         control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelectPlane);
@@ -182,8 +322,7 @@ namespace BombPlane
                 }
                 else
                 {
-                    foreach (Plane plane in _planes)
-                        plane.Clear();
+                    ClearGrids();
                     foreach (Control control in this.tableLayoutPanel.Controls)
                     {
                         control.MouseClick -= new MouseEventHandler(ButtonMouseClickForSelectPlane);
@@ -193,122 +332,25 @@ namespace BombPlane
             }
         }
 
-        internal Plane[] _planes;
-        internal Plane? _selectedPlane;
-        private Button _selectedButton;
-        public int SelectedButtonX { get { return tableLayoutPanel.GetColumn(_selectedButton); } }
-        public int SelectedButtonY { get { return tableLayoutPanel.GetRow(_selectedButton); } }
-        public Point SelectedButtonPoint { get { return new Point(SelectedButtonX, SelectedButtonY); } }
-        public const int NumOfPlane = 3;
+    }
+    public class DuplicatedSelectionException : Exception
+    {
+        public DuplicatedSelectionException(string? message) : base(message) { }
     }
 
-
-    internal class Plane
+    public class Plane
     {
-        public Plane(Direction direction, int headX, int headY, GridNetwork? gridNetwork)
+        public Plane(Direction direction, int headX, int headY)
         {
             this.direction = direction;
-            this.gridNetwork = gridNetwork;
             HeadPoint = new Point(headX, headY);
-        }
-
-
-        internal bool Move(Direction direction)
-        {
-            bool valid = true;
-            Point origin = HeadPoint;
-            Clear();
-            switch (direction)
-            {
-                case Direction.Up:
-                    HeadY -= 1;
-                    break;
-                case Direction.Down:
-                    HeadY += 1;
-                    break;
-                case Direction.Left:
-                    HeadX -= 1;
-                    break;
-                case Direction.Right:
-                    HeadX += 1;
-                    break;
-            }
-            if (!CheckPlaneValid())
-            {
-                HeadPoint = origin;
-                valid = false;
-            }
-            Draw();
-            return valid;
-        }
-
-        internal bool Rotate()
-        {
-            bool valid = true;
-            Direction origin = direction;
-            Clear();
-            switch (direction)
-            {
-                case Direction.Up:
-                    direction = Direction.Right;
-                    break;
-                case Direction.Down:
-                    direction = Direction.Left;
-                    break;
-                case Direction.Left:
-                    direction = Direction.Up;
-                    break;
-                case Direction.Right:
-                    direction = Direction.Down;
-                    break;
-            }
-            if (!CheckPlaneValid())
-            {
-                direction = origin;
-                valid = false;
-            }
-            Draw();
-            return valid;
-        }
-
-        private bool CheckPlaneValid()
-        {
-            foreach (var point in BodyPoints)
-                if (point.X < 0 || point.Y < 0 || point.X >= gridNetwork.ColumnCount || point.Y >= gridNetwork.RowCount)
-                    return false;
-            foreach (Plane plane in gridNetwork._planes)
-                if (!ReferenceEquals(plane, this) && plane.BodyPoints.Intersect(BodyPoints).Count() > 0)
-                    return false;
-            return true;
-        }
-        internal void Clear()
-        {
-            foreach (var point in BodyPoints)
-            {
-                Control control = gridNetwork.GetControlFromPosition(point.X, point.Y);
-                control.BackColor = SystemColors.ControlDark;
-            }
-        }
-
-
-        internal void Draw()
-        {
-            foreach (var point in BodyPoints)
-            {
-                Control control = gridNetwork.GetControlFromPosition(point.X, point.Y);
-                control.BackColor = Color.LimeGreen;
-            }
-            Control headControl = gridNetwork.GetControlFromPosition(HeadPoint.X, HeadPoint.Y);
-            headControl.BackColor = Color.OrangeRed;
         }
 
         public Direction direction;
         public Point HeadPoint;
-        private GridNetwork gridNetwork;
 
         public int HeadX { get { return HeadPoint.X; } set { HeadPoint.X = value; } }
         public int HeadY { get { return HeadPoint.Y; } set { HeadPoint.Y = value; } }
-
 
         public HashSet<Point> BodyPoints
         {
@@ -317,6 +359,8 @@ namespace BombPlane
                 Point[] points;
                 switch (direction)
                 {
+                    // direction decide the head of plane fact to;
+                    // rotation is centered on head.
                     case Direction.Up:
                         points = new Point[10]
                         {
@@ -386,18 +430,12 @@ namespace BombPlane
         }
 
     }
-    public enum BombResult
+
+    public enum Direction
     {
-        body,
-        head,
-        none,
-        error,
-    }
-    internal enum Direction
-    {
-        Up,
-        Down,
-        Left,
-        Right
+        Up = 0,
+        Down = 1,
+        Left = 2,
+        Right = 3
     }
 }
