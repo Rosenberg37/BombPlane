@@ -19,11 +19,6 @@ namespace BombPlane
         public GridNetwork()
         {
             InitializeComponent();
-            _planes = new Plane[NumOfPlane] {
-                new Plane(Direction.Up, 2, 0),
-                new Plane(Direction.Up, 2, 6),
-                new Plane(Direction.Up, 7, 2)
-            };
             foreach (Control control in tableLayoutPanel.Controls)
                 control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelect);
         }
@@ -49,7 +44,7 @@ namespace BombPlane
             if (selectedButton.BackColor != Color.Yellow)
             {
                 selectedButton.BackColor = Color.Yellow;
-                foreach (Plane plane in _planes)
+                foreach (Plane plane in Planes)
                 {
                     if (point.X == plane.HeadX && point.Y == plane.HeadY)
                     {
@@ -102,15 +97,15 @@ namespace BombPlane
             int x = tableLayoutPanel.GetColumn(_selectedButton);
             int y = tableLayoutPanel.GetRow(_selectedButton);
             Point point = new Point(x, y);
-            foreach (Plane plane in _planes)
+            for (int i = 0; i < NumOfPlane; i++)
             {
-                if (plane.BodyPoints.Contains(point))
+                if (Planes[i].BodyPoints.Contains(point))
                 {
-                    _selectedPlane = plane;
+                    _selectedPlaneIndex = i;
                     return;
                 }
             }
-            _selectedPlane = null;
+            _selectedPlaneIndex = -1;
         }
 
         private void ButtonMouseClickForSelect(object sender, MouseEventArgs e)
@@ -120,24 +115,24 @@ namespace BombPlane
 
         private void ButtonKeyPressForMove(object sender, KeyPressEventArgs e)
         {
-            if (_selectedPlane != null)
+            if (SelectedPlane != null)
             {
                 switch (e.KeyChar)
                 {
                     case 'w':
-                        MovePlane(_selectedPlane, Direction.Up);
+                        MovePlane(SelectedPlane, Direction.Up);
                         break;
                     case 's':
-                        MovePlane(_selectedPlane, Direction.Down);
+                        MovePlane(SelectedPlane, Direction.Down);
                         break;
                     case 'a':
-                        MovePlane(_selectedPlane, Direction.Left);
+                        MovePlane(SelectedPlane, Direction.Left);
                         break;
                     case 'd':
-                        MovePlane(_selectedPlane, Direction.Right);
+                        MovePlane(SelectedPlane, Direction.Right);
                         break;
                     case 'r':
-                        RotatePlane(_selectedPlane);
+                        RotatePlane(SelectedPlane);
                         break;
                 }
             }
@@ -219,7 +214,7 @@ namespace BombPlane
 
         private bool CheckPlaneNotConflicted(Plane plane)
         {
-            return CheckPlaneNotConflicted(plane, _planes);
+            return CheckPlaneNotConflicted(plane, Planes);
         }
 
         public static bool CheckPlanesValid(Plane[] planes)
@@ -236,12 +231,12 @@ namespace BombPlane
 
         public bool CheckPlanesValid()
         {
-            return CheckPlanesValid(_planes);
+            return CheckPlanesValid(Planes);
         }
 
         private void DrawPlanes()
         {
-            foreach (Plane plane in _planes)
+            foreach (Plane plane in Planes)
             {
                 foreach (var point in plane.BodyPoints)
                 {
@@ -255,7 +250,7 @@ namespace BombPlane
                     }
                 }
             }
-            foreach (Plane plane in _planes)
+            foreach (Plane plane in Planes)
             {
                 Control headControl = GetControlFromPosition(plane.HeadPoint);
                 if (headControl.BackColor == Color.LimeGreen)
@@ -273,35 +268,89 @@ namespace BombPlane
                 control.ForeColor = SystemColors.ControlText;
                 int X = tableLayoutPanel.GetColumn(control);
                 int Y = tableLayoutPanel.GetRow(control);
-                String column = X.ToString();
-                String row = ((char)('A' + Y)).ToString();
+                string column = X.ToString();
+                string row = ((char)('A' + Y)).ToString();
                 control.Text = row + column;
             }
+            _selectedButton = null;
         }
 
-        public Point GetSelectBombPoint()
+        public Point? GetBombPoint()
         {
-            if (_selectedButton.BackColor != SystemColors.ControlDark)
+            if (_selectedButton != null && _selectedButton.BackColor != SystemColors.ControlDark)
                 throw new DuplicatedSelectionException("The button have been selected.");
             else
                 return SelectedButtonPoint;
         }
 
 
+        private Plane[]? _planes;
+        public Plane[] Planes
+        {
+            get { return _planes; }
+            set
+            {
+                if (value != null)
+                {
+                    if (value.Length != NumOfPlane)
+                        throw new ArgumentException("Too many planes");
+                    foreach (Plane plane in value)
+                        if (!CheckPlaneBounded(plane))
+                            throw new ArgumentException("Invalid plane");
+                }
+                _planes = value;
+            }
+        }
+        private int _selectedPlaneIndex = -1;
+        private Plane? SelectedPlane
+        {
+            get
+            {
+                if (_selectedPlaneIndex == -1)
+                    return null;
+                else
+                    return Planes[_selectedPlaneIndex];
+            }
+        }
 
-        internal Plane[] _planes;
-        internal Plane? _selectedPlane;
-        private Button _selectedButton;
-        public int SelectedButtonX { get { return tableLayoutPanel.GetColumn(_selectedButton); } }
-        public int SelectedButtonY { get { return tableLayoutPanel.GetRow(_selectedButton); } }
-        public Point SelectedButtonPoint { get { return new Point(SelectedButtonX, SelectedButtonY); } }
+        private Button? _selectedButton;
+        public int? SelectedButtonX
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return tableLayoutPanel.GetColumn(_selectedButton);
+            }
+        }
+        public int? SelectedButtonY
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return tableLayoutPanel.GetRow(_selectedButton);
+            }
+        }
+        public Point? SelectedButtonPoint
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return new Point((int)SelectedButtonX, (int)SelectedButtonY);
+            }
+        }
 
         public const int NumOfPlane = 3;
         public const int RowCount = 10;
         public const int ColumnCount = 10;
 
         private bool _planeVisible;
-        public bool PlaneVisiblibity
+        public bool IsPlaneVisible
         {
             get
             {
@@ -309,6 +358,7 @@ namespace BombPlane
             }
             set
             {
+                ClearGrids();
                 _planeVisible = value;
 
                 if (value)
@@ -322,7 +372,6 @@ namespace BombPlane
                 }
                 else
                 {
-                    ClearGrids();
                     foreach (Control control in this.tableLayoutPanel.Controls)
                     {
                         control.MouseClick -= new MouseEventHandler(ButtonMouseClickForSelectPlane);
@@ -331,7 +380,6 @@ namespace BombPlane
                 }
             }
         }
-
     }
     public class DuplicatedSelectionException : Exception
     {

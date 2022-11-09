@@ -11,12 +11,17 @@ namespace BombPlane
     {
         public AI(int port)
         {
+            _port = port;
+        }
+
+        public void Start()
+        {
             try
             {
                 _socketListen.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, -300);
 
                 //1.绑定IP和Port
-                IPEndPoint iPEndPoint = new(IPAddress.Any, port);
+                IPEndPoint iPEndPoint = new(IPAddress.Any, _port);
                 //2.使用Bind()进行绑定
                 _socketListen.Bind(iPEndPoint);
                 //3.开启监听
@@ -121,10 +126,7 @@ namespace BombPlane
                     }
                 }
             }
-            catch (ThreadInterruptedException)
-            {
-                acceptSocket.Close();
-            }
+            catch (ReceiveExpection) { }
         }
 
         public void Prepare()
@@ -132,9 +134,9 @@ namespace BombPlane
             int columnCount = GridNetwork.ColumnCount;
             int rowCount = GridNetwork.RowCount;
             _planes = new Plane[GridNetwork.NumOfPlane] {
-                new Plane((Direction)random.Next(0, 3), random.Next(0,columnCount ), random.Next(0,rowCount)),
-                new Plane((Direction)random.Next(0, 3), random.Next(0,columnCount ), random.Next(0,rowCount)),
-                new Plane((Direction)random.Next(0, 3), random.Next(0,columnCount ), random.Next(0,rowCount)),
+                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
+                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
+                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
             };
             int index = 0;
             while (!GridNetwork.CheckPlanesValid(_planes))
@@ -173,24 +175,32 @@ namespace BombPlane
 
         private static string Receive(Socket socket) //接收客户端数据
         {
-            byte[] buffer = new byte[1024];
-            int len = socket.Receive(buffer);
-            return Encoding.Unicode.GetString(buffer, 0, len);
+            try
+            {
+                byte[] buffer = new byte[1024];
+                int len = socket.Receive(buffer);
+                return Encoding.Unicode.GetString(buffer, 0, len);
+            }
+            catch (SocketException e) { throw new ReceiveExpection(e); }
         }
 
         private static void Send(Socket socket, string text) // 向客户端发送数据
         {
-            //SFlag标志连接成功，同时当客户端是打开的时候才能发送数据
-            byte[] buffer = Encoding.Unicode.GetBytes(text);    //将字符串转成字节格式发送
-            socket.Send(buffer);  //调用Send()向客户端发送数据
+            try
+            {
+                byte[] buffer = Encoding.Unicode.GetBytes(text);    //将字符串转成字节格式发送
+                socket.Send(buffer);  //调用Send()向客户端发送数据
+            }
+            catch (SocketException e) { throw new SendException(e); }
         }
 
+        private int _port;
         private Plane[]? _planes;
-        private readonly Random random = new();
+        private Random random = new();
         private int _numOfHitPlane;
         private GameState state = GameState.idle;
 
-        private readonly Socket _socketListen = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
-        private readonly Thread? _threadListen;     //声明线程
+        private Socket _socketListen = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
+        private Thread? _threadListen;     //声明线程
     }
 }

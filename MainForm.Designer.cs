@@ -31,7 +31,7 @@
             this.components = new System.ComponentModel.Container();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabelLeft = new System.Windows.Forms.ToolStripStatusLabel();
-            this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.specialToolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRight = new System.Windows.Forms.ToolStripStatusLabel();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.leftTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
@@ -49,10 +49,11 @@
             this.label1 = new System.Windows.Forms.Label();
             this.gridNetworkCounterSide = new BombPlane.GridNetwork();
             this.gridNetworkOurSide = new BombPlane.GridNetwork();
-            this.MainButtun = new System.Windows.Forms.Button();
+            this.MainButton = new System.Windows.Forms.Button();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.用户名设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.网络前缀设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.遍历端口设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.监听端口设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.口令设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -60,9 +61,16 @@
             this.控制ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.刷新对手列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.保持对手列表刷新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.DisconnectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.游戏ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.StartGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.FinishPrepareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.InitializePlanesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.BombToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.网络前缀设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.用户名说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.端口及网络设置说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.游戏流程说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.leftTableLayoutPanel.SuspendLayout();
@@ -79,7 +87,7 @@
             this.statusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabelLeft,
-            this.toolStripStatusLabel2,
+            this.specialToolStripStatusLabel,
             this.toolStripStatusLabelRight});
             this.statusStrip.Location = new System.Drawing.Point(0, 658);
             this.statusStrip.Name = "statusStrip";
@@ -92,14 +100,14 @@
             this.toolStripStatusLabelLeft.BackColor = System.Drawing.Color.MediumBlue;
             this.toolStripStatusLabelLeft.ForeColor = System.Drawing.SystemColors.Menu;
             this.toolStripStatusLabelLeft.Name = "toolStripStatusLabelLeft";
-            this.toolStripStatusLabelLeft.Size = new System.Drawing.Size(117, 20);
-            this.toolStripStatusLabelLeft.Text = "NotConnected";
+            this.toolStripStatusLabelLeft.Size = new System.Drawing.Size(121, 20);
+            this.toolStripStatusLabelLeft.Text = "Not Connected";
             // 
-            // toolStripStatusLabel2
+            // specialToolStripStatusLabel
             // 
-            this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(1077, 20);
-            this.toolStripStatusLabel2.Spring = true;
+            this.specialToolStripStatusLabel.Name = "specialToolStripStatusLabel";
+            this.specialToolStripStatusLabel.Size = new System.Drawing.Size(1073, 20);
+            this.specialToolStripStatusLabel.Spring = true;
             // 
             // toolStripStatusLabelRight
             // 
@@ -150,6 +158,7 @@
             this.pictureBox1.Size = new System.Drawing.Size(344, 244);
             this.pictureBox1.TabIndex = 1;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.DoubleClick += new System.EventHandler(this.pictureBoxDoubleClick);
             // 
             // listView
             // 
@@ -222,7 +231,7 @@
             this.leftPanel.Controls.Add(this.label1);
             this.leftPanel.Controls.Add(this.gridNetworkCounterSide);
             this.leftPanel.Controls.Add(this.gridNetworkOurSide);
-            this.leftPanel.Controls.Add(this.MainButtun);
+            this.leftPanel.Controls.Add(this.MainButton);
             this.leftPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.leftPanel.Location = new System.Drawing.Point(0, 0);
             this.leftPanel.Margin = new System.Windows.Forms.Padding(0);
@@ -250,31 +259,34 @@
             // 
             // gridNetworkCounterSide
             // 
+            this.gridNetworkCounterSide.IsPlaneVisible = false;
             this.gridNetworkCounterSide.Location = new System.Drawing.Point(483, 12);
             this.gridNetworkCounterSide.Name = "gridNetworkCounterSide";
-            this.gridNetworkCounterSide.PlaneVisiblibity = false;
+            this.gridNetworkCounterSide.Planes = null;
             this.gridNetworkCounterSide.Size = new System.Drawing.Size(400, 400);
             this.gridNetworkCounterSide.TabIndex = 4;
             // 
             // gridNetworkOurSide
             // 
+            this.gridNetworkOurSide.IsPlaneVisible = false;
             this.gridNetworkOurSide.Location = new System.Drawing.Point(15, 12);
             this.gridNetworkOurSide.Name = "gridNetworkOurSide";
-            this.gridNetworkOurSide.PlaneVisiblibity = false;
+            this.gridNetworkOurSide.Planes = null;
             this.gridNetworkOurSide.Size = new System.Drawing.Size(400, 400);
             this.gridNetworkOurSide.TabIndex = 3;
             // 
-            // MainButtun
+            // MainButton
             // 
-            this.MainButtun.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.MainButton.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.MainButtun.Location = new System.Drawing.Point(350, 518);
-            this.MainButtun.Name = "MainButtun";
-            this.MainButtun.Size = new System.Drawing.Size(189, 61);
-            this.MainButtun.TabIndex = 2;
-            this.MainButtun.Text = "开始游戏";
-            this.MainButtun.UseVisualStyleBackColor = true;
-            this.MainButtun.Click += new System.EventHandler(this.MainButtunClick);
+            this.MainButton.Enabled = false;
+            this.MainButton.Location = new System.Drawing.Point(350, 518);
+            this.MainButton.Name = "MainButton";
+            this.MainButton.Size = new System.Drawing.Size(189, 61);
+            this.MainButton.TabIndex = 2;
+            this.MainButton.Text = "开始游戏";
+            this.MainButton.UseVisualStyleBackColor = true;
+            this.MainButton.Click += new System.EventHandler(this.MainButtunClick);
             // 
             // menuStrip
             // 
@@ -294,9 +306,9 @@
             // 
             this.设置ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.用户名设置ToolStripMenuItem,
+            this.网络前缀设置ToolStripMenuItem,
             this.遍历端口设置ToolStripMenuItem,
             this.监听端口设置ToolStripMenuItem,
-            this.网络前缀设置ToolStripMenuItem,
             this.口令设置ToolStripMenuItem,
             this.连接口令提示设置ToolStripMenuItem});
             this.设置ToolStripMenuItem.Name = "设置ToolStripMenuItem";
@@ -306,35 +318,42 @@
             // 用户名设置ToolStripMenuItem
             // 
             this.用户名设置ToolStripMenuItem.Name = "用户名设置ToolStripMenuItem";
-            this.用户名设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.用户名设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.用户名设置ToolStripMenuItem.Text = "用户名设置";
             this.用户名设置ToolStripMenuItem.Click += new System.EventHandler(this.UserNameSettingToolStripMenuItemClick);
+            // 
+            // 网络前缀设置ToolStripMenuItem
+            // 
+            this.网络前缀设置ToolStripMenuItem.Name = "网络前缀设置ToolStripMenuItem";
+            this.网络前缀设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
+            this.网络前缀设置ToolStripMenuItem.Text = "网络前缀设置";
+            this.网络前缀设置ToolStripMenuItem.Click += new System.EventHandler(this.NetworkPrefixSettingToolStripMenuItemClick);
             // 
             // 遍历端口设置ToolStripMenuItem
             // 
             this.遍历端口设置ToolStripMenuItem.Name = "遍历端口设置ToolStripMenuItem";
-            this.遍历端口设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.遍历端口设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.遍历端口设置ToolStripMenuItem.Text = "遍历端口设置";
             this.遍历端口设置ToolStripMenuItem.Click += new System.EventHandler(this.TravelPortSettingToolStripMenuItemClick);
             // 
             // 监听端口设置ToolStripMenuItem
             // 
             this.监听端口设置ToolStripMenuItem.Name = "监听端口设置ToolStripMenuItem";
-            this.监听端口设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.监听端口设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.监听端口设置ToolStripMenuItem.Text = "监听端口设置";
             this.监听端口设置ToolStripMenuItem.Click += new System.EventHandler(this.ListenPortSettingToolStripMenuItemClick);
             // 
             // 口令设置ToolStripMenuItem
             // 
             this.口令设置ToolStripMenuItem.Name = "口令设置ToolStripMenuItem";
-            this.口令设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.口令设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.口令设置ToolStripMenuItem.Text = "连接口令设置";
             this.口令设置ToolStripMenuItem.Click += new System.EventHandler(this.WatchwordSettingToolStripMenuItemClick);
             // 
             // 连接口令提示设置ToolStripMenuItem
             // 
             this.连接口令提示设置ToolStripMenuItem.Name = "连接口令提示设置ToolStripMenuItem";
-            this.连接口令提示设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.连接口令提示设置ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.连接口令提示设置ToolStripMenuItem.Text = "连接口令提示设置";
             this.连接口令提示设置ToolStripMenuItem.Click += new System.EventHandler(this.WatchwordHintSettingToolStripMenuItemClick);
             // 
@@ -342,7 +361,8 @@
             // 
             this.控制ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.刷新对手列表ToolStripMenuItem,
-            this.保持对手列表刷新ToolStripMenuItem});
+            this.保持对手列表刷新ToolStripMenuItem,
+            this.DisconnectToolStripMenuItem});
             this.控制ToolStripMenuItem.Name = "控制ToolStripMenuItem";
             this.控制ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.控制ToolStripMenuItem.Text = "控制";
@@ -361,33 +381,98 @@
             this.保持对手列表刷新ToolStripMenuItem.Text = "保持对手列表刷新";
             this.保持对手列表刷新ToolStripMenuItem.Click += new System.EventHandler(this.KeepRivalListFlushToolStripMenuItemClick);
             // 
+            // DisconnectToolStripMenuItem
+            // 
+            this.DisconnectToolStripMenuItem.Enabled = false;
+            this.DisconnectToolStripMenuItem.Name = "DisconnectToolStripMenuItem";
+            this.DisconnectToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
+            this.DisconnectToolStripMenuItem.Text = "断开连接";
+            this.DisconnectToolStripMenuItem.Click += new System.EventHandler(this.DisconnectToolStripMenuItemClick);
+            // 
             // 游戏ToolStripMenuItem
             // 
+            this.游戏ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.StartGameToolStripMenuItem,
+            this.FinishPrepareToolStripMenuItem,
+            this.BombToolStripMenuItem});
             this.游戏ToolStripMenuItem.Name = "游戏ToolStripMenuItem";
             this.游戏ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.游戏ToolStripMenuItem.Text = "游戏";
             // 
+            // StartGameToolStripMenuItem
+            // 
+            this.StartGameToolStripMenuItem.Enabled = false;
+            this.StartGameToolStripMenuItem.Name = "StartGameToolStripMenuItem";
+            this.StartGameToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.StartGameToolStripMenuItem.Text = "开始游戏";
+            this.StartGameToolStripMenuItem.Click += new System.EventHandler(this.StartGameToolStripMenuItemClick);
+            // 
+            // FinishPrepareToolStripMenuItem
+            // 
+            this.FinishPrepareToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.InitializePlanesToolStripMenuItem});
+            this.FinishPrepareToolStripMenuItem.Enabled = false;
+            this.FinishPrepareToolStripMenuItem.Name = "FinishPrepareToolStripMenuItem";
+            this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.FinishPrepareToolStripMenuItem.Text = "完成准备";
+            this.FinishPrepareToolStripMenuItem.Click += new System.EventHandler(this.FinishPrepareToolStripMenuItemClick);
+            // 
+            // InitializePlanesToolStripMenuItem
+            // 
+            this.InitializePlanesToolStripMenuItem.Enabled = false;
+            this.InitializePlanesToolStripMenuItem.Name = "InitializePlanesToolStripMenuItem";
+            this.InitializePlanesToolStripMenuItem.Size = new System.Drawing.Size(197, 26);
+            this.InitializePlanesToolStripMenuItem.Text = "随机初始化飞机";
+            this.InitializePlanesToolStripMenuItem.Click += new System.EventHandler(this.InitializePlanesToolStripMenuItemClick);
+            // 
+            // BombToolStripMenuItem
+            // 
+            this.BombToolStripMenuItem.BackColor = System.Drawing.SystemColors.Control;
+            this.BombToolStripMenuItem.Enabled = false;
+            this.BombToolStripMenuItem.Name = "BombToolStripMenuItem";
+            this.BombToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.BombToolStripMenuItem.Text = "轰炸";
+            this.BombToolStripMenuItem.Click += new System.EventHandler(this.BombToolStripMenuItemClick);
+            // 
             // 帮助ToolStripMenuItem
             // 
+            this.帮助ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.用户名说明ToolStripMenuItem,
+            this.端口及网络设置说明ToolStripMenuItem,
+            this.游戏流程说明ToolStripMenuItem});
             this.帮助ToolStripMenuItem.Name = "帮助ToolStripMenuItem";
             this.帮助ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.帮助ToolStripMenuItem.Text = "帮助";
             // 
-            // 网络前缀设置ToolStripMenuItem
+            // 用户名说明ToolStripMenuItem
             // 
-            this.网络前缀设置ToolStripMenuItem.Name = "网络前缀设置ToolStripMenuItem";
-            this.网络前缀设置ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
-            this.网络前缀设置ToolStripMenuItem.Text = "网络前缀设置";
-            this.网络前缀设置ToolStripMenuItem.Click += new System.EventHandler(this.NetworkPrefixSettingToolStripMenuItemClick);
+            this.用户名说明ToolStripMenuItem.Name = "用户名说明ToolStripMenuItem";
+            this.用户名说明ToolStripMenuItem.Size = new System.Drawing.Size(227, 26);
+            this.用户名说明ToolStripMenuItem.Text = "用户名说明";
+            this.用户名说明ToolStripMenuItem.Click += new System.EventHandler(this.UserNameHelpToolStripMenuItemClick);
             // 
-            // MainForm
+            // 端口及网络设置说明ToolStripMenuItem
+            // 
+            this.端口及网络设置说明ToolStripMenuItem.Name = "端口及网络设置说明ToolStripMenuItem";
+            this.端口及网络设置说明ToolStripMenuItem.Size = new System.Drawing.Size(227, 26);
+            this.端口及网络设置说明ToolStripMenuItem.Text = "端口及网络设置说明";
+            this.端口及网络设置说明ToolStripMenuItem.Click += new System.EventHandler(this.PortAndNetworkHelpToolStripMenuItemClick);
+            // 
+            // 游戏流程说明ToolStripMenuItem
+            // 
+            this.游戏流程说明ToolStripMenuItem.Name = "游戏流程说明ToolStripMenuItem";
+            this.游戏流程说明ToolStripMenuItem.Size = new System.Drawing.Size(227, 26);
+            this.游戏流程说明ToolStripMenuItem.Text = "游戏流程说明";
+            this.游戏流程说明ToolStripMenuItem.Click += new System.EventHandler(this.GameProcedureHelpToolStripMenuItemClick);
+            // 
+            // BombPLaneForm
             // 
             this.ClientSize = new System.Drawing.Size(1245, 684);
             this.Controls.Add(this.mainTableLayoutPanel);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.menuStrip);
             this.MainMenuStrip = this.menuStrip;
-            this.Name = "MainForm";
+            this.Name = "BombPLaneForm";
             this.Text = "炸飞机大赛";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
@@ -414,12 +499,12 @@
         private PictureBox pictureBox1;
         private Panel rightSidePanel;
         private Panel leftPanel;
-        private Button MainButtun;
+        private Button MainButton;
         private GridNetwork gridNetworkOurSide;
         private GridNetwork gridNetworkCounterSide;
         private Label label2;
         private Label label1;
-        private ToolStripStatusLabel toolStripStatusLabel2;
+        private ToolStripStatusLabel specialToolStripStatusLabel;
         private ToolStripStatusLabel toolStripStatusLabelRight;
         private ListView listView;
         private ColumnHeader UserName;
@@ -441,5 +526,13 @@
         private ToolStripMenuItem 帮助ToolStripMenuItem;
         private ToolStripMenuItem 遍历端口设置ToolStripMenuItem;
         private ToolStripMenuItem 网络前缀设置ToolStripMenuItem;
+        private ToolStripMenuItem 用户名说明ToolStripMenuItem;
+        private ToolStripMenuItem 端口及网络设置说明ToolStripMenuItem;
+        private ToolStripMenuItem 游戏流程说明ToolStripMenuItem;
+        private ToolStripMenuItem StartGameToolStripMenuItem;
+        private ToolStripMenuItem FinishPrepareToolStripMenuItem;
+        private ToolStripMenuItem InitializePlanesToolStripMenuItem;
+        private ToolStripMenuItem BombToolStripMenuItem;
+        private ToolStripMenuItem DisconnectToolStripMenuItem;
     }
 }
