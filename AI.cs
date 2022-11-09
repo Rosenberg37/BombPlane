@@ -149,7 +149,7 @@ namespace BombPlane
                 if (point.X == plane.HeadX && point.Y == plane.HeadY)
                     return BombResult.head;
                 else
-                    foreach (Point planePoint in plane.BodyPoints)
+                    foreach (Point planePoint in plane.Points)
                         if (point.X == planePoint.X && point.Y == planePoint.Y)
                             return BombResult.body;
             return BombResult.none;
@@ -167,7 +167,7 @@ namespace BombPlane
                 if (X == plane.HeadX && Y == plane.HeadY)
                     return BombResult.head;
                 else
-                    foreach (Point planePoint in plane.BodyPoints)
+                    foreach (Point planePoint in plane.Points)
                         if (X == planePoint.X && Y == planePoint.Y)
                             return BombResult.body;
             return BombResult.none;

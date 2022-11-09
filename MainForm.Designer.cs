@@ -35,7 +35,7 @@
             this.toolStripStatusLabelRight = new System.Windows.Forms.ToolStripStatusLabel();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.leftTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.PictureBox = new System.Windows.Forms.PictureBox();
             this.listView = new System.Windows.Forms.ListView();
             this.UserName = new System.Windows.Forms.ColumnHeader();
             this.IP = new System.Windows.Forms.ColumnHeader();
@@ -60,13 +60,14 @@
             this.连接口令提示设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.控制ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.刷新对手列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.保持对手列表刷新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.KeepFlushToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.DisconnectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.游戏ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StartGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FinishPrepareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.InitializePlanesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.BombToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.AssistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.用户名说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.端口及网络设置说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -74,7 +75,7 @@
             this.statusStrip.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.leftTableLayoutPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.listViewContext.SuspendLayout();
             this.rightSidePanel.SuspendLayout();
             this.leftPanel.SuspendLayout();
@@ -135,7 +136,7 @@
             // 
             this.leftTableLayoutPanel.ColumnCount = 1;
             this.leftTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.leftTableLayoutPanel.Controls.Add(this.pictureBox1, 0, 0);
+            this.leftTableLayoutPanel.Controls.Add(this.PictureBox, 0, 0);
             this.leftTableLayoutPanel.Controls.Add(this.listView, 0, 1);
             this.leftTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.leftTableLayoutPanel.Location = new System.Drawing.Point(0, 0);
@@ -147,18 +148,18 @@
             this.leftTableLayoutPanel.Size = new System.Drawing.Size(350, 630);
             this.leftTableLayoutPanel.TabIndex = 0;
             // 
-            // pictureBox1
+            // PictureBox
             // 
-            this.pictureBox1.BackColor = System.Drawing.SystemColors.Window;
-            this.pictureBox1.BackgroundImage = global::BombPlane.Properties.Resources.logo;
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pictureBox1.Location = new System.Drawing.Point(3, 3);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(344, 244);
-            this.pictureBox1.TabIndex = 1;
-            this.pictureBox1.TabStop = false;
-            this.pictureBox1.DoubleClick += new System.EventHandler(this.pictureBoxDoubleClick);
+            this.PictureBox.BackColor = System.Drawing.SystemColors.Window;
+            this.PictureBox.BackgroundImage = global::BombPlane.Properties.Resources.logo;
+            this.PictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.PictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.PictureBox.Location = new System.Drawing.Point(3, 3);
+            this.PictureBox.Name = "PictureBox";
+            this.PictureBox.Size = new System.Drawing.Size(344, 244);
+            this.PictureBox.TabIndex = 1;
+            this.PictureBox.TabStop = false;
+            this.PictureBox.DoubleClick += new System.EventHandler(this.PictureBoxDoubleClick);
             // 
             // listView
             // 
@@ -361,7 +362,7 @@
             // 
             this.控制ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.刷新对手列表ToolStripMenuItem,
-            this.保持对手列表刷新ToolStripMenuItem,
+            this.KeepFlushToolStripMenuItem,
             this.DisconnectToolStripMenuItem});
             this.控制ToolStripMenuItem.Name = "控制ToolStripMenuItem";
             this.控制ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
@@ -374,12 +375,12 @@
             this.刷新对手列表ToolStripMenuItem.Text = "刷新对手列表";
             this.刷新对手列表ToolStripMenuItem.Click += new System.EventHandler(this.FlushRivalListToolStripMenuItemClick);
             // 
-            // 保持对手列表刷新ToolStripMenuItem
+            // KeepFlushToolStripMenuItem
             // 
-            this.保持对手列表刷新ToolStripMenuItem.Name = "保持对手列表刷新ToolStripMenuItem";
-            this.保持对手列表刷新ToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
-            this.保持对手列表刷新ToolStripMenuItem.Text = "保持对手列表刷新";
-            this.保持对手列表刷新ToolStripMenuItem.Click += new System.EventHandler(this.KeepRivalListFlushToolStripMenuItemClick);
+            this.KeepFlushToolStripMenuItem.Name = "KeepFlushToolStripMenuItem";
+            this.KeepFlushToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
+            this.KeepFlushToolStripMenuItem.Text = "保持对手列表刷新";
+            this.KeepFlushToolStripMenuItem.Click += new System.EventHandler(this.KeepRivalListFlushToolStripMenuItemClick);
             // 
             // DisconnectToolStripMenuItem
             // 
@@ -403,7 +404,7 @@
             // 
             this.StartGameToolStripMenuItem.Enabled = false;
             this.StartGameToolStripMenuItem.Name = "StartGameToolStripMenuItem";
-            this.StartGameToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.StartGameToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.StartGameToolStripMenuItem.Text = "开始游戏";
             this.StartGameToolStripMenuItem.Click += new System.EventHandler(this.StartGameToolStripMenuItemClick);
             // 
@@ -413,7 +414,7 @@
             this.InitializePlanesToolStripMenuItem});
             this.FinishPrepareToolStripMenuItem.Enabled = false;
             this.FinishPrepareToolStripMenuItem.Name = "FinishPrepareToolStripMenuItem";
-            this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.FinishPrepareToolStripMenuItem.Text = "完成准备";
             this.FinishPrepareToolStripMenuItem.Click += new System.EventHandler(this.FinishPrepareToolStripMenuItemClick);
             // 
@@ -428,11 +429,21 @@
             // BombToolStripMenuItem
             // 
             this.BombToolStripMenuItem.BackColor = System.Drawing.SystemColors.Control;
+            this.BombToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.AssistToolStripMenuItem});
             this.BombToolStripMenuItem.Enabled = false;
             this.BombToolStripMenuItem.Name = "BombToolStripMenuItem";
-            this.BombToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.BombToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.BombToolStripMenuItem.Text = "轰炸";
             this.BombToolStripMenuItem.Click += new System.EventHandler(this.BombToolStripMenuItemClick);
+            // 
+            // AssistToolStripMenuItem
+            // 
+            this.AssistToolStripMenuItem.Enabled = false;
+            this.AssistToolStripMenuItem.Name = "AssistToolStripMenuItem";
+            this.AssistToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.AssistToolStripMenuItem.Text = "敌机辅助显示";
+            this.AssistToolStripMenuItem.Click += new System.EventHandler(this.AssistToolStripMenuItemClick);
             // 
             // 帮助ToolStripMenuItem
             // 
@@ -478,7 +489,7 @@
             this.statusStrip.PerformLayout();
             this.mainTableLayoutPanel.ResumeLayout(false);
             this.leftTableLayoutPanel.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).EndInit();
             this.listViewContext.ResumeLayout(false);
             this.rightSidePanel.ResumeLayout(false);
             this.leftPanel.ResumeLayout(false);
@@ -496,7 +507,7 @@
         private ToolStripStatusLabel toolStripStatusLabelLeft;
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel leftTableLayoutPanel;
-        private PictureBox pictureBox1;
+        private PictureBox PictureBox;
         private Panel rightSidePanel;
         private Panel leftPanel;
         private Button MainButton;
@@ -519,7 +530,7 @@
         private ColumnHeader Port;
         private ToolStripMenuItem 控制ToolStripMenuItem;
         private ToolStripMenuItem 刷新对手列表ToolStripMenuItem;
-        private ToolStripMenuItem 保持对手列表刷新ToolStripMenuItem;
+        private ToolStripMenuItem KeepFlushToolStripMenuItem;
         private ToolStripMenuItem 刷新ToolStripMenuItem;
         private ToolStripMenuItem 连接口令提示设置ToolStripMenuItem;
         private ToolStripMenuItem 游戏ToolStripMenuItem;
@@ -534,5 +545,6 @@
         private ToolStripMenuItem InitializePlanesToolStripMenuItem;
         private ToolStripMenuItem BombToolStripMenuItem;
         private ToolStripMenuItem DisconnectToolStripMenuItem;
+        private ToolStripMenuItem AssistToolStripMenuItem;
     }
 }

@@ -167,29 +167,12 @@ namespace BombPlane
             }
         }
 
-        private void InitializePlane()
-        {
-            Random random = new();
-            int columnCount = GridNetwork.ColumnCount;
-            int rowCount = GridNetwork.RowCount;
-
-            Plane[] planes = new Plane[GridNetwork.NumOfPlane] {
-                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
-                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
-                new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
-            };
-            int index = 0;
-            while (!GridNetwork.CheckPlanesValid(planes))
-                planes[index++ % GridNetwork.NumOfPlane] = new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount));
-            gridNetworkOurSide.Planes = planes;
-            gridNetworkOurSide.IsPlaneVisible = true;
-        }
-
         private void TurnPrepare()
         {
             state = GameState.preparing;
             statusStrip.Items[2].Text = "准备中";
-            InitializePlane();
+            gridNetworkOurSide.InitializePlanes();
+            gridNetworkOurSide.IsPlaneVisible = true;
             MainButton.Text = "完成准备";
             MainButton.Enabled = true;
         }
@@ -201,10 +184,12 @@ namespace BombPlane
             MainButton.Text = "开始游戏";
             MainButton.Enabled = true;
             gridNetworkOurSide.IsPlaneVisible = false;
+            gridNetworkOurSide.ClearGrids();
             gridNetworkCounterSide.ClearGrids();
             _numOfHitPlane = 0;
             StartGameToolStripMenuItem.Enabled = true;
             BombToolStripMenuItem.Enabled = false;
+            AssistToolStripMenuItem.Enabled = false;
             InitializePlanesToolStripMenuItem.Enabled = false;
             FinishPrepareToolStripMenuItem.Enabled = false;
         }
@@ -215,6 +200,7 @@ namespace BombPlane
             statusStrip.Items[2].Text = "游戏中";
             MainButton.Enabled = true;
             BombToolStripMenuItem.Enabled = true;
+            AssistToolStripMenuItem.Enabled = true;
             MainButton.Text = "轰炸";
         }
 
@@ -233,6 +219,7 @@ namespace BombPlane
                     Send(_communicateSocket, string.Format("GetBombResult {0}{1}", Y, X));
                     MainButton.Enabled = false;
                     BombToolStripMenuItem.Enabled = false;
+                    AssistToolStripMenuItem.Enabled = false;
                 }
             }
             catch (DuplicatedSelectionException)
@@ -737,7 +724,7 @@ namespace BombPlane
 
         private void InitializePlanesToolStripMenuItemClick(object sender, EventArgs e)
         {
-            InitializePlane();
+            gridNetworkOurSide.InitializePlanes();
         }
 
         private void BombToolStripMenuItemClick(object sender, EventArgs e)
@@ -755,7 +742,23 @@ namespace BombPlane
             TurnIdle();
         }
 
-        private void pictureBoxDoubleClick(object sender, EventArgs e)
+        private void AssistToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            if (item.Checked)
+            {
+                item.Checked = false;
+                gridNetworkCounterSide.IsPlaneVisible = false;
+            }
+            else
+            {
+                gridNetworkCounterSide.InitializePlanes();
+                gridNetworkCounterSide.IsPlaneVisible = true;
+                item.Checked = true;
+            }
+        }
+
+        private void PictureBoxDoubleClick(object sender, EventArgs e)
         {
             if (_count == -1)
             {
