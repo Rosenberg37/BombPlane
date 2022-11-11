@@ -93,20 +93,20 @@ namespace BombPlane
                             Send(acceptSocket, "FinishPrepare");
                             break;
                         case "GetBombResult":
-                            int Y = strs[1][0] - 'A';
-                            int X = strs[1][1] - '0';
-                            BombResult bombResult = Bomb(X, Y);
+                            Point bombPoint = GridView.ConvertStringToPoint(strs[1]);
+                            BombResult bombResult = Bomb(bombPoint);
                             Send(acceptSocket, "BombResult " + strs[1] + " " + bombResult.ToString());
 
-                            char newY = (char)(random.Next(0, 9) + 'A');
-                            char newX = (char)(random.Next(0, 9) + '0');
-                            Send(acceptSocket, string.Format("GetBombResult {0}{1}", newY, newX));
+                            int X = random.Next(0, 9);
+                            int Y = random.Next(0, 9);
+                            string pos = GridView.ConvertPointToString(X, Y);
+                            Send(acceptSocket, string.Format("GetBombResult {0}", pos));
                             break;
                         case "BombResult":
                             BombResult result = (BombResult)Enum.Parse(typeof(BombResult), strs[2], true);
                             if (result == BombResult.head)
                                 _numOfHitPlane++;
-                            if (_numOfHitPlane == GridNetwork.NumOfPlane)
+                            if (_numOfHitPlane == GridView.NumOfPlane)
                             {
                                 Send(acceptSocket, "GameOver");
                                 TurnIdle();
@@ -131,36 +131,22 @@ namespace BombPlane
 
         public void Prepare()
         {
-            int columnCount = GridNetwork.ColumnCount;
-            int rowCount = GridNetwork.RowCount;
-            _planes = new Plane[GridNetwork.NumOfPlane] {
+            int columnCount = GridView.ColumnCount;
+            int rowCount = GridView.RowCount;
+            _planes = new Plane[GridView.NumOfPlane] {
                 new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
                 new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
                 new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount)),
             };
             int index = 0;
-            while (!GridNetwork.CheckPlanesValid(_planes))
-                _planes[index++ % GridNetwork.NumOfPlane] = new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount));
+            while (!GridView.CheckPlanesValid(_planes))
+                _planes[index++ % GridView.NumOfPlane] = new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount));
         }
 
         public BombResult Bomb(Point point)
         {
-            foreach (Plane plane in _planes)
-                if (point.X == plane.HeadX && point.Y == plane.HeadY)
-                    return BombResult.head;
-                else
-                    foreach (Point planePoint in plane.Points)
-                        if (point.X == planePoint.X && point.Y == planePoint.Y)
-                            return BombResult.body;
-            return BombResult.none;
+            return Bomb(point.X, point.Y);
         }
-
-        private void TurnIdle()
-        {
-            state = GameState.idle;
-            _numOfHitPlane = 0;
-        }
-
         public BombResult Bomb(int X, int Y)
         {
             foreach (Plane plane in _planes)
@@ -172,6 +158,14 @@ namespace BombPlane
                             return BombResult.body;
             return BombResult.none;
         }
+
+        private void TurnIdle()
+        {
+            state = GameState.idle;
+            _numOfHitPlane = 0;
+        }
+
+
 
         private static string Receive(Socket socket) //接收客户端数据
         {

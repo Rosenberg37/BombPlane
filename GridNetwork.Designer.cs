@@ -1,6 +1,6 @@
 ﻿namespace BombPlane
 {
-    partial class GridNetwork
+    partial class GridView
     {
         /// <summary> 
         /// Required designer variable.

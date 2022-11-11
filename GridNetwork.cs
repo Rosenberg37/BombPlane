@@ -14,13 +14,128 @@ using System.Windows.Forms;
 
 namespace BombPlane
 {
-    public partial class GridNetwork : UserControl
+    public partial class GridView : UserControl
     {
-        public GridNetwork()
+        public GridView()
         {
             InitializeComponent();
             foreach (Control control in tableLayoutPanel.Controls)
                 control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelect);
+        }
+
+        private Plane[]? _planes;
+        public Plane[] Planes
+        {
+            get { return _planes; }
+            set
+            {
+                if (value != null)
+                {
+                    if (value.Length != NumOfPlane)
+                        throw new ArgumentException("Too many planes");
+                    foreach (Plane plane in value)
+                        if (!CheckPlaneBounded(plane))
+                            throw new ArgumentException("Invalid plane");
+                }
+                _planes = value;
+            }
+        }
+        private int _selectedPlaneIndex = -1;
+        private Plane? SelectedPlane
+        {
+            get
+            {
+                if (_selectedPlaneIndex == -1)
+                    return null;
+                else
+                    return Planes[_selectedPlaneIndex];
+            }
+        }
+
+        private Button? _selectedButton;
+        public int? SelectedButtonX
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return tableLayoutPanel.GetColumn(_selectedButton);
+            }
+        }
+        public int? SelectedButtonY
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return tableLayoutPanel.GetRow(_selectedButton);
+            }
+        }
+        public Point? SelectedButtonPoint
+        {
+            get
+            {
+                if (_selectedButton == null)
+                    return null;
+                else
+                    return new Point((int)SelectedButtonX, (int)SelectedButtonY);
+            }
+        }
+
+        public const int NumOfPlane = 3;
+        public const int RowCount = 10;
+        public const int ColumnCount = 10;
+
+        private bool _planeVisible;
+        public bool IsPlaneVisible
+        {
+            get
+            {
+                return _planeVisible;
+            }
+            set
+            {
+                if (Planes != null)
+                    ClearPlanes();
+
+                if (value)
+                {
+                    DrawPlanes();
+                    foreach (Control control in this.tableLayoutPanel.Controls)
+                    {
+                        control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelectPlane);
+                        control.KeyPress += new KeyPressEventHandler(ButtonKeyPressForMove);
+                    }
+                }
+                else
+                {
+                    foreach (Control control in this.tableLayoutPanel.Controls)
+                    {
+                        control.MouseClick -= new MouseEventHandler(ButtonMouseClickForSelectPlane);
+                        control.KeyPress -= new KeyPressEventHandler(ButtonKeyPressForMove);
+                    }
+                }
+                _planeVisible = value;
+            }
+        }
+
+        public static Point ConvertStringToPoint(string str)
+        {
+            int Y = str[0] - 'A';
+            int X = str[1] - '0';
+            return new Point(X, Y);
+        }
+
+        public static string ConvertPointToString(int X, int Y)
+        {
+            return new string(new char[2] { (char)(Y + 'A'), (char)(X + '0') });
+        }
+
+        public static string ConvertPointToString(Point point)
+        {
+            return ConvertPointToString(point.Y, point.X);
         }
 
         public Control GetControlFromPosition(int X, int Y)
@@ -31,6 +146,13 @@ namespace BombPlane
         public Control GetControlFromPosition(Point point)
         {
             return tableLayoutPanel.GetControlFromPosition(point.X, point.Y);
+        }
+
+        public Point GetControlPoint(Control control)
+        {
+            int X = tableLayoutPanel.GetColumn(control);
+            int Y = tableLayoutPanel.GetRow(control);
+            return new Point(X, Y);
         }
 
         public BombResult BombAndDraw(int X, int Y)
@@ -300,6 +422,29 @@ namespace BombPlane
                 return SelectedButtonPoint;
         }
 
+        public List<(Point, BombResult)> GetCurrentGridStates()
+        {
+            List<(Point, BombResult)> results = new();
+            foreach (Control control in tableLayoutPanel.Controls)
+            {
+                if (control.BackColor == Color.Yellow)
+                {
+                    if (control.Text == "身")
+                    {
+                        Point point = GetControlPoint(control);
+                        results.Add((point, BombResult.body));
+
+                    }
+                    else if (control.Text == "头")
+                    {
+                        Point point = GetControlPoint(control);
+                        results.Add((point, BombResult.head));
+                    }
+                }
+            }
+            return results;
+        }
+
         public void InitializePlanes()
         {
             Random random = new();
@@ -314,209 +459,9 @@ namespace BombPlane
             if (IsPlaneVisible)
                 IsPlaneVisible = true;
         }
-
-
-        private Plane[]? _planes;
-        public Plane[] Planes
-        {
-            get { return _planes; }
-            set
-            {
-                if (value != null)
-                {
-                    if (value.Length != NumOfPlane)
-                        throw new ArgumentException("Too many planes");
-                    foreach (Plane plane in value)
-                        if (!CheckPlaneBounded(plane))
-                            throw new ArgumentException("Invalid plane");
-                }
-                _planes = value;
-            }
-        }
-        private int _selectedPlaneIndex = -1;
-        private Plane? SelectedPlane
-        {
-            get
-            {
-                if (_selectedPlaneIndex == -1)
-                    return null;
-                else
-                    return Planes[_selectedPlaneIndex];
-            }
-        }
-
-        private Button? _selectedButton;
-        public int? SelectedButtonX
-        {
-            get
-            {
-                if (_selectedButton == null)
-                    return null;
-                else
-                    return tableLayoutPanel.GetColumn(_selectedButton);
-            }
-        }
-        public int? SelectedButtonY
-        {
-            get
-            {
-                if (_selectedButton == null)
-                    return null;
-                else
-                    return tableLayoutPanel.GetRow(_selectedButton);
-            }
-        }
-        public Point? SelectedButtonPoint
-        {
-            get
-            {
-                if (_selectedButton == null)
-                    return null;
-                else
-                    return new Point((int)SelectedButtonX, (int)SelectedButtonY);
-            }
-        }
-
-        public const int NumOfPlane = 3;
-        public const int RowCount = 10;
-        public const int ColumnCount = 10;
-
-        private bool _planeVisible;
-        public bool IsPlaneVisible
-        {
-            get
-            {
-                return _planeVisible;
-            }
-            set
-            {
-                if (Planes != null)
-                    ClearPlanes();
-                
-                if (value)
-                {
-                    DrawPlanes();
-                    foreach (Control control in this.tableLayoutPanel.Controls)
-                    {
-                        control.MouseClick += new MouseEventHandler(ButtonMouseClickForSelectPlane);
-                        control.KeyPress += new KeyPressEventHandler(ButtonKeyPressForMove);
-                    }
-                }
-                else
-                {
-                    foreach (Control control in this.tableLayoutPanel.Controls)
-                    {
-                        control.MouseClick -= new MouseEventHandler(ButtonMouseClickForSelectPlane);
-                        control.KeyPress -= new KeyPressEventHandler(ButtonKeyPressForMove);
-                    }
-                }
-                _planeVisible = value;
-            }
-        }
     }
     public class DuplicatedSelectionException : Exception
     {
         public DuplicatedSelectionException(string? message) : base(message) { }
-    }
-
-    public class Plane
-    {
-        public Plane(Direction direction, int headX, int headY)
-        {
-            this.direction = direction;
-            HeadPoint = new Point(headX, headY);
-        }
-
-        public Direction direction;
-        public Point HeadPoint;
-
-        public int HeadX { get { return HeadPoint.X; } set { HeadPoint.X = value; } }
-        public int HeadY { get { return HeadPoint.Y; } set { HeadPoint.Y = value; } }
-
-        public HashSet<Point> Points
-        {
-            get
-            {
-                Point[] points;
-                switch (direction)
-                {
-                    // direction decide the head of plane fact to;
-                    // rotation is centered on head.
-                    case Direction.Up:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX, HeadY + 1),
-                            new Point(HeadX - 1, HeadY + 1),
-                            new Point(HeadX + 1, HeadY + 1),
-                            new Point(HeadX - 2, HeadY + 1),
-                            new Point(HeadX + 2, HeadY + 1),
-                            new Point(HeadX, HeadY + 2),
-                            new Point(HeadX, HeadY + 3),
-                            new Point(HeadX + 1, HeadY + 3),
-                            new Point(HeadX - 1, HeadY + 3),
-                        };
-                        break;
-                    case Direction.Down:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX, HeadY - 1),
-                            new Point(HeadX - 1, HeadY - 1),
-                            new Point(HeadX + 1, HeadY - 1),
-                            new Point(HeadX - 2, HeadY - 1),
-                            new Point(HeadX + 2, HeadY - 1),
-                            new Point(HeadX, HeadY - 2),
-                            new Point(HeadX, HeadY - 3),
-                            new Point(HeadX + 1, HeadY - 3),
-                            new Point(HeadX - 1, HeadY - 3),
-                        };
-                        break;
-                    case Direction.Left:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX + 1, HeadY),
-                            new Point(HeadX + 1, HeadY + 1),
-                            new Point(HeadX + 1, HeadY - 1),
-                            new Point(HeadX + 1, HeadY + 2),
-                            new Point(HeadX + 1, HeadY - 2),
-                            new Point(HeadX + 2, HeadY),
-                            new Point(HeadX + 3, HeadY),
-                            new Point(HeadX + 3, HeadY + 1),
-                            new Point(HeadX + 3, HeadY - 1),
-                        };
-                        break;
-                    case Direction.Right:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX - 1, HeadY),
-                            new Point(HeadX - 1, HeadY + 1),
-                            new Point(HeadX - 1, HeadY - 1),
-                            new Point(HeadX - 1, HeadY + 2),
-                            new Point(HeadX - 1, HeadY - 2),
-                            new Point(HeadX - 2, HeadY),
-                            new Point(HeadX - 3, HeadY),
-                            new Point(HeadX - 3, HeadY + 1),
-                            new Point(HeadX - 3, HeadY - 1),
-                        };
-                        break;
-                    default:
-                        points = new Point[10];
-                        break;
-                }
-                return new HashSet<Point>(points);
-            }
-        }
-
-    }
-
-    public enum Direction
-    {
-        Up = 0,
-        Down = 1,
-        Left = 2,
-        Right = 3
     }
 }

@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.VisualBasic;
 using System.Xml.Linq;
 using System.Numerics;
+using System.Diagnostics;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace BombPlane
 {
@@ -29,6 +31,12 @@ namespace BombPlane
             _flushCTS.Token.Register(() =>
             {
                 _flushThread = null;
+            });
+
+            _delegateCTS = new CancellationTokenSource();
+            _delegateCTS.Token.Register(() =>
+            {
+                _delegateThread = null;
             });
 
             ListenPort = 2000;
@@ -92,13 +100,20 @@ namespace BombPlane
         }
         private Socket _listenSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
         private Thread? _listenThread;     //声明线程
-        CancellationTokenSource? _listenCTS;
+        private CancellationTokenSource? _listenCTS;
 
         private Socket? _communicateSocket; //负责通信的socket
         private Thread? _communicateThread;
 
         private AI _ai;
+
+        private string? _delegateProgram;
+        private Thread? _delegateThread;     //声明线程
+        private CancellationTokenSource? _delegateCTS;
+
+
         private int _count = 0;
+
 
         private static string Receive(Socket socket) //接收客户端数据
         {
@@ -129,8 +144,8 @@ namespace BombPlane
             _communicateSocket = socket;
             _communicateThread = new Thread(Communicate)
             {
-                IsBackground = true    //运行线程在后台执行
-            };   //线程绑定Listen函数
+                IsBackground = true
+            };
             _communicateThread.Start();
             MainButton.Enabled = true;
             StartGameToolStripMenuItem.Enabled = true;
@@ -204,19 +219,18 @@ namespace BombPlane
             MainButton.Text = "轰炸";
         }
 
-        private void Bomb()
+        private void Bomb(Point? point)
         {
             try
             {
-                // Get our side bomb selection and draw on counterside.
-                Point? point = gridNetworkCounterSide.GetBombPoint();
                 if (point == null)
                     MessageBox.Show("请先点击选择轰炸的点");
                 else
                 {
-                    char Y = (char)(gridNetworkCounterSide.SelectedButtonY + 'A');
-                    char X = (char)(gridNetworkCounterSide.SelectedButtonX + '0');
-                    Send(_communicateSocket, string.Format("GetBombResult {0}{1}", Y, X));
+                    int? Y = gridNetworkCounterSide.SelectedButtonY;
+                    int? X = gridNetworkCounterSide.SelectedButtonX;
+                    string pos = GridView.ConvertPointToString((int)X, (int)Y);
+                    Send(_communicateSocket, string.Format("GetBombResult {0}", pos));
                     MainButton.Enabled = false;
                     BombToolStripMenuItem.Enabled = false;
                     AssistToolStripMenuItem.Enabled = false;
@@ -227,6 +241,8 @@ namespace BombPlane
                 MessageBox.Show("选定轰炸位置不合理，请不要选择轰炸过的位置");
             }
         }
+
+        private void Bomb() { Bomb(gridNetworkCounterSide.GetBombPoint()); }
 
         private void GameOver()
         {
@@ -405,9 +421,8 @@ namespace BombPlane
                             if (state == GameState.idle)
                                 break;
 
-                            int Y = strs[1][0] - 'A';
-                            int X = strs[1][1] - '0';
-                            BombResult result = gridNetworkOurSide.BombAndDraw(X, Y);
+                            Point bombPoint = GridView.ConvertStringToPoint(strs[1]);
+                            BombResult result = gridNetworkOurSide.BombAndDraw(bombPoint);
                             Send(_communicateSocket, "BombResult " + strs[1] + " " + result.ToString());
                             if (state == GameState.wait)
                                 TurnGame();
@@ -419,13 +434,13 @@ namespace BombPlane
                             break;
                         case "BombResult":
                             BombResult bombResult = (BombResult)Enum.Parse(typeof(BombResult), strs[2], true);
-                            Point point = new(strs[1][1] - '0', strs[1][0] - 'A');
-                            gridNetworkCounterSide.DrawBombResult(point, bombResult);
+                            Point drawPoint = GridView.ConvertStringToPoint(strs[1]);
+                            gridNetworkCounterSide.DrawBombResult(drawPoint, bombResult);
 
                             if (bombResult == BombResult.head)
                                 _numOfHitPlane++;
 
-                            if (_numOfHitPlane == GridNetwork.NumOfPlane)
+                            if (_numOfHitPlane == GridView.NumOfPlane)
                                 GameOver();
                             else
                             {
@@ -727,10 +742,7 @@ namespace BombPlane
             gridNetworkOurSide.InitializePlanes();
         }
 
-        private void BombToolStripMenuItemClick(object sender, EventArgs e)
-        {
-            Bomb();
-        }
+        private void BombToolStripMenuItemClick(object sender, EventArgs e) { Bomb(); }
 
         private void DisconnectToolStripMenuItemClick(object sender, EventArgs e)
         {
@@ -755,6 +767,173 @@ namespace BombPlane
                 gridNetworkCounterSide.InitializePlanes();
                 gridNetworkCounterSide.IsPlaneVisible = true;
                 item.Checked = true;
+            }
+        }
+
+        private void SetDelegateToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            if (item.Checked)
+            {
+                item.Checked = false;
+                _delegateProgram = null;
+            }
+            else
+            {
+                OpenFileDialog dialog = new OpenFileDialog();
+                dialog.Multiselect = false;
+                dialog.Title = "请选择代理程序";
+                dialog.Filter = "所有文件|*.exe";
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    Process process = new();
+                    process.StartInfo.FileName = dialog.FileName;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardInput = true;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.StartInfo.CreateNoWindow = true;
+
+                    try
+                    {
+                        process.Start();
+                        process.WaitForExit();
+                        if (process.StandardOutput.ReadToEnd() == "BombPlane")
+                            _delegateProgram = dialog.FileName;
+                        else
+                            MessageBox.Show("不是有效的代理程序");
+                    }
+                    catch { MessageBox.Show("无法启动代理程序"); }
+                }
+            }
+        }
+
+        private void DelegateInitializeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process process = new();
+            process.StartInfo.FileName = _delegateProgram;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.Arguments = "Initialize";
+
+            try
+            {
+                process.Start();
+                process.WaitForExit();
+            }
+            catch { MessageBox.Show("代理程序启动失败"); }
+
+            string str = process.StandardOutput.ReadToEnd();
+            string[] strs = str.Split(' ');
+            List<Plane> planes = new();
+            for (int i = 0; i < 3; i++)
+            {
+                Direction direction = (Direction)Enum.Parse(typeof(Direction), strs[i * 2], true);
+                Point point = GridView.ConvertStringToPoint(strs[i * 2] + 1);
+                planes.Add(new Plane(direction, point));
+            }
+
+            gridNetworkOurSide.Planes = planes.ToArray();
+        }
+
+        private void DelegateBombToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            Process process = new();
+            process.StartInfo.FileName = _delegateProgram;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+
+            var results = gridNetworkCounterSide.GetCurrentGridStates();
+            StringBuilder args = new();
+            foreach (var result in results)
+            {
+                args.Append(GridView.ConvertPointToString(result.Item1));
+                args.Append(' ');
+                args.Append(result.Item2.ToString());
+                args.Append(' ');
+            }
+            process.StartInfo.Arguments = args.ToString();
+
+            try
+            {
+                process.Start();
+                process.WaitForExit();
+            }
+            catch { MessageBox.Show("代理程序启动失败"); }
+
+            string str = process.StandardOutput.ReadToEnd();
+            Point point = GridView.ConvertStringToPoint(str);
+            Bomb(point);
+        }
+
+        private void DelegateHostToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            if (item.Checked)
+            {
+                _delegateCTS.Cancel();
+                item.Checked = false;
+                MainButton.Enabled = true;
+            }
+            else
+            {
+                MainButton.Enabled = false;
+                _delegateThread = new Thread((obj) =>
+                {
+                    CancellationToken ct = (CancellationToken)obj;
+                    while (!ct.IsCancellationRequested)
+                    {
+                        switch (state)
+                        {
+                            case GameState.idle:
+                                StartGame();
+                                break;
+                            case GameState.preparing:
+                                FinishPrepare();
+                                break;
+                            case GameState.gaming:
+                            case GameState.wait:
+                                Process process = new();
+                                process.StartInfo.FileName = _delegateProgram;
+                                process.StartInfo.UseShellExecute = false;
+                                process.StartInfo.RedirectStandardInput = true;
+                                process.StartInfo.RedirectStandardOutput = true;
+                                process.StartInfo.RedirectStandardError = true;
+                                process.StartInfo.CreateNoWindow = true;
+
+                                var results = gridNetworkCounterSide.GetCurrentGridStates();
+                                StringBuilder args = new();
+                                foreach (var result in results)
+                                {
+                                    args.Append(GridView.ConvertPointToString(result.Item1));
+                                    args.Append(' ');
+                                    args.Append(result.Item2.ToString());
+                                    args.Append(' ');
+                                }
+                                process.StartInfo.Arguments = args.ToString();
+
+                                try
+                                {
+                                    process.Start();
+                                    process.WaitForExit();
+                                }
+                                catch { MessageBox.Show("代理程序启动失败"); }
+
+                                string str = process.StandardOutput.ReadToEnd();
+                                Point point = GridView.ConvertStringToPoint(str);
+                                Bomb(point);
+                                break;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                });
+                _delegateThread.Start(_delegateCTS.Token);
             }
         }
 

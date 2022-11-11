@@ -47,8 +47,8 @@
             this.leftPanel = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.gridNetworkCounterSide = new BombPlane.GridNetwork();
-            this.gridNetworkOurSide = new BombPlane.GridNetwork();
+            this.gridNetworkCounterSide = new BombPlane.GridView();
+            this.gridNetworkOurSide = new BombPlane.GridView();
             this.MainButton = new System.Windows.Forms.Button();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,6 +58,7 @@
             this.监听端口设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.口令设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.连接口令提示设置ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SetDelegateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.控制ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.刷新对手列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.KeepFlushToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -66,12 +67,15 @@
             this.StartGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FinishPrepareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.InitializePlanesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.DelegateInitializeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.BombToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AssistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.代理轰炸ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.用户名说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.端口及网络设置说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.游戏流程说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.托管ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.leftTableLayoutPanel.SuspendLayout();
@@ -311,7 +315,8 @@
             this.遍历端口设置ToolStripMenuItem,
             this.监听端口设置ToolStripMenuItem,
             this.口令设置ToolStripMenuItem,
-            this.连接口令提示设置ToolStripMenuItem});
+            this.连接口令提示设置ToolStripMenuItem,
+            this.SetDelegateToolStripMenuItem});
             this.设置ToolStripMenuItem.Name = "设置ToolStripMenuItem";
             this.设置ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.设置ToolStripMenuItem.Text = "设置";
@@ -358,6 +363,12 @@
             this.连接口令提示设置ToolStripMenuItem.Text = "连接口令提示设置";
             this.连接口令提示设置ToolStripMenuItem.Click += new System.EventHandler(this.WatchwordHintSettingToolStripMenuItemClick);
             // 
+            // SetDelegateToolStripMenuItem
+            // 
+            this.SetDelegateToolStripMenuItem.Name = "SetDelegateToolStripMenuItem";
+            this.SetDelegateToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
+            this.SetDelegateToolStripMenuItem.Text = "设置程序代理";
+            // 
             // 控制ToolStripMenuItem
             // 
             this.控制ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -395,7 +406,8 @@
             this.游戏ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StartGameToolStripMenuItem,
             this.FinishPrepareToolStripMenuItem,
-            this.BombToolStripMenuItem});
+            this.BombToolStripMenuItem,
+            this.托管ToolStripMenuItem});
             this.游戏ToolStripMenuItem.Name = "游戏ToolStripMenuItem";
             this.游戏ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.游戏ToolStripMenuItem.Text = "游戏";
@@ -411,7 +423,8 @@
             // FinishPrepareToolStripMenuItem
             // 
             this.FinishPrepareToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.InitializePlanesToolStripMenuItem});
+            this.InitializePlanesToolStripMenuItem,
+            this.DelegateInitializeToolStripMenuItem});
             this.FinishPrepareToolStripMenuItem.Enabled = false;
             this.FinishPrepareToolStripMenuItem.Name = "FinishPrepareToolStripMenuItem";
             this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
@@ -426,11 +439,20 @@
             this.InitializePlanesToolStripMenuItem.Text = "随机初始化飞机";
             this.InitializePlanesToolStripMenuItem.Click += new System.EventHandler(this.InitializePlanesToolStripMenuItemClick);
             // 
+            // DelegateInitializeToolStripMenuItem
+            // 
+            this.DelegateInitializeToolStripMenuItem.Enabled = false;
+            this.DelegateInitializeToolStripMenuItem.Name = "DelegateInitializeToolStripMenuItem";
+            this.DelegateInitializeToolStripMenuItem.Size = new System.Drawing.Size(197, 26);
+            this.DelegateInitializeToolStripMenuItem.Text = "代理初始化";
+            this.DelegateInitializeToolStripMenuItem.Click += new System.EventHandler(this.DelegateInitializeToolStripMenuItem_Click);
+            // 
             // BombToolStripMenuItem
             // 
             this.BombToolStripMenuItem.BackColor = System.Drawing.SystemColors.Control;
             this.BombToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.AssistToolStripMenuItem});
+            this.AssistToolStripMenuItem,
+            this.代理轰炸ToolStripMenuItem});
             this.BombToolStripMenuItem.Enabled = false;
             this.BombToolStripMenuItem.Name = "BombToolStripMenuItem";
             this.BombToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
@@ -441,9 +463,17 @@
             // 
             this.AssistToolStripMenuItem.Enabled = false;
             this.AssistToolStripMenuItem.Name = "AssistToolStripMenuItem";
-            this.AssistToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.AssistToolStripMenuItem.Size = new System.Drawing.Size(182, 26);
             this.AssistToolStripMenuItem.Text = "敌机辅助显示";
             this.AssistToolStripMenuItem.Click += new System.EventHandler(this.AssistToolStripMenuItemClick);
+            // 
+            // 代理轰炸ToolStripMenuItem
+            // 
+            this.代理轰炸ToolStripMenuItem.Enabled = false;
+            this.代理轰炸ToolStripMenuItem.Name = "代理轰炸ToolStripMenuItem";
+            this.代理轰炸ToolStripMenuItem.Size = new System.Drawing.Size(182, 26);
+            this.代理轰炸ToolStripMenuItem.Text = "代理轰炸";
+            this.代理轰炸ToolStripMenuItem.Click += new System.EventHandler(this.DelegateBombToolStripMenuItemClick);
             // 
             // 帮助ToolStripMenuItem
             // 
@@ -475,6 +505,15 @@
             this.游戏流程说明ToolStripMenuItem.Size = new System.Drawing.Size(227, 26);
             this.游戏流程说明ToolStripMenuItem.Text = "游戏流程说明";
             this.游戏流程说明ToolStripMenuItem.Click += new System.EventHandler(this.GameProcedureHelpToolStripMenuItemClick);
+            // 
+            // 托管ToolStripMenuItem
+            // 
+            this.托管ToolStripMenuItem.DoubleClickEnabled = true;
+            this.托管ToolStripMenuItem.Enabled = false;
+            this.托管ToolStripMenuItem.Name = "托管ToolStripMenuItem";
+            this.托管ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.托管ToolStripMenuItem.Text = "托管";
+            this.托管ToolStripMenuItem.Click += new System.EventHandler(this.DelegateHostToolStripMenuItemClick);
             // 
             // BombPLaneForm
             // 
@@ -511,8 +550,8 @@
         private Panel rightSidePanel;
         private Panel leftPanel;
         private Button MainButton;
-        private GridNetwork gridNetworkOurSide;
-        private GridNetwork gridNetworkCounterSide;
+        private GridView gridNetworkOurSide;
+        private GridView gridNetworkCounterSide;
         private Label label2;
         private Label label1;
         private ToolStripStatusLabel specialToolStripStatusLabel;
@@ -546,5 +585,9 @@
         private ToolStripMenuItem BombToolStripMenuItem;
         private ToolStripMenuItem DisconnectToolStripMenuItem;
         private ToolStripMenuItem AssistToolStripMenuItem;
+        private ToolStripMenuItem SetDelegateToolStripMenuItem;
+        private ToolStripMenuItem DelegateInitializeToolStripMenuItem;
+        private ToolStripMenuItem 代理轰炸ToolStripMenuItem;
+        private ToolStripMenuItem 托管ToolStripMenuItem;
     }
 }
