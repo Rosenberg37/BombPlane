@@ -1,18 +1,87 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
+
 
 namespace BombPlane
 {
+    using State = HashSet<Plane>;
+    using StateSet = HashSet<HashSet<Plane>>;
+
     public class AI
     {
+
+        private static StateSet _allState = new StateSet();
+        public static StateSet AllState
+        {
+            get
+            {
+                if (_allState.Count == 0)
+                    foreach (var plane1 in Plane.BoundedPlanes)
+                        foreach (var plane2 in Plane.BoundedPlanes)
+                            foreach (var plane3 in Plane.BoundedPlanes)
+                                if (!plane2.Conflict(plane1) && !plane3.Conflict(plane2) && !plane3.Conflict(plane1))
+                                    _allState.Add(new State(new Plane[] { plane1, plane2, plane3 }));
+                return _allState;
+            }
+        }
+
+
+        private static Dictionary<Point, Dictionary<BombResult, StateSet>> _stateMapping;
+        public static Dictionary<Point, Dictionary<BombResult, StateSet>> StateMapping
+        {
+            get
+            {
+                if (_stateMapping == null)
+                {
+                    _stateMapping = new Dictionary<Point, Dictionary<BombResult, StateSet>>();
+                    for (int x = 0; x < GridView.ColumnCount; x++)
+                    {
+                        for (int y = 0; y < GridView.RowCount; y++)
+                        {
+                            Point point = new(x, y);
+                            _stateMapping[point] = new Dictionary<BombResult, StateSet>();
+                            _stateMapping[point][BombResult.none] = new StateSet();
+                            _stateMapping[point][BombResult.body] = new StateSet();
+                            _stateMapping[point][BombResult.head] = new StateSet();
+                        }
+                    }
+
+                    foreach (var state in AllState)
+                    {
+                        HashSet<Point> points = GridView.Points;
+                        foreach (var plane in state)
+                        {
+                            _stateMapping[plane.HeadPoint][BombResult.head].Add(state);
+                            foreach (var point in plane.BodyPoints)
+                                _stateMapping[point][BombResult.body].Add(state);
+                            points.ExceptWith(plane.Points);
+                        }
+                        foreach (var point in points)
+                            _stateMapping[point][BombResult.none].Add(state);
+                    }
+                }
+                return _stateMapping;
+            }
+
+        }
+
         public AI(int port)
         {
             _port = port;
         }
+
+        private int _port;
+        private Plane[]? _planes;
+        private Random random = new();
+        private int numOfHitPlane;
+        private GameState state = GameState.idle;
+
+        private Socket _socketListen = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
+        private Thread? _threadListen;     //声明线程
+
+        private HashSet<Point> remainPoints;
+        private StateSet remianState;
+        private Point selectedPoint;
 
         public void Start()
         {
@@ -81,34 +150,36 @@ namespace BombPlane
             {
                 while (true)
                 {
-                    string command = Receive(acceptSocket);
+                    string command = Utility.Receive(acceptSocket);
                     string[] strs = command.Split(' ');
                     switch (strs[0])
                     {
                         case "StartGame":
-                            Send(acceptSocket, "GameAccept");
+                            Utility.Send(acceptSocket, "GameAccept");
                             break;
                         case "FinishPrepare":
                             Prepare();
-                            Send(acceptSocket, "FinishPrepare");
+                            Utility.Send(acceptSocket, "FinishPrepare");
                             break;
                         case "GetBombResult":
                             Point bombPoint = GridView.ConvertStringToPoint(strs[1]);
                             BombResult bombResult = Bomb(bombPoint);
-                            Send(acceptSocket, "BombResult " + strs[1] + " " + bombResult.ToString());
+                            Utility.Send(acceptSocket, "BombResult " + strs[1] + " " + bombResult.ToString());
 
-                            int X = random.Next(0, 9);
-                            int Y = random.Next(0, 9);
-                            string pos = GridView.ConvertPointToString(X, Y);
-                            Send(acceptSocket, string.Format("GetBombResult {0}", pos));
+                            SelectPoint();
+                            string pos = GridView.ConvertPointToString(selectedPoint);
+                            Utility.Send(acceptSocket, string.Format("GetBombResult {0}", pos));
                             break;
                         case "BombResult":
                             BombResult result = (BombResult)Enum.Parse(typeof(BombResult), strs[2], true);
+                            StateSet states = StateMapping[selectedPoint][result];
+                            remianState.IntersectWith(states);
+
                             if (result == BombResult.head)
-                                _numOfHitPlane++;
-                            if (_numOfHitPlane == GridView.NumOfPlane)
+                                numOfHitPlane++;
+                            if (numOfHitPlane == GridView.NumOfPlane)
                             {
-                                Send(acceptSocket, "GameOver");
+                                Utility.Send(acceptSocket, "GameOver");
                                 TurnIdle();
                             }
                             break;
@@ -116,10 +187,10 @@ namespace BombPlane
                             TurnIdle();
                             break;
                         case "GetName":
-                            Send(acceptSocket, "AI");
+                            Utility.Send(acceptSocket, "AI");
                             break;
                         case "Connect":
-                            Send(acceptSocket, "Accept");
+                            Utility.Send(acceptSocket, "Accept");
                             break;
                         default:
                             break;
@@ -127,6 +198,34 @@ namespace BombPlane
                 }
             }
             catch (ReceiveExpection) { }
+        }
+
+        private Point SelectPoint()
+        {
+            double maxGain = -1;
+            foreach (var point in remainPoints)
+            {
+                StateSet noneStates = StateMapping[point][BombResult.none];
+                StateSet possibleNoneStates = new(remianState.Intersect(noneStates));
+                double p_none = (double)possibleNoneStates.Count / remianState.Count;
+
+                StateSet bodyStates = StateMapping[point][BombResult.body];
+                StateSet possibleBodyStates = new(remianState.Intersect(bodyStates));
+                double p_body = (double)possibleBodyStates.Count / remianState.Count;
+
+                StateSet headStates = StateMapping[point][BombResult.none];
+                StateSet possibleHeadStates = new(remianState.Intersect(headStates));
+                double p_head = (double)possibleHeadStates.Count / remianState.Count;
+
+                double gain = 1 - p_none * p_none - p_body - p_body - p_head * p_head;
+                if (gain > maxGain)
+                {
+                    maxGain = gain;
+                    selectedPoint = point;
+                }
+            }
+            remainPoints.Remove(selectedPoint);
+            return selectedPoint;
         }
 
         public void Prepare()
@@ -141,6 +240,9 @@ namespace BombPlane
             int index = 0;
             while (!GridView.CheckPlanesValid(_planes))
                 _planes[index++ % GridView.NumOfPlane] = new Plane((Direction)random.Next(0, 3), random.Next(0, columnCount), random.Next(0, rowCount));
+            remainPoints = new HashSet<Point>(GridView.Points);
+            remianState = new StateSet(AllState);
+            numOfHitPlane = 0;
         }
 
         public BombResult Bomb(Point point)
@@ -159,42 +261,6 @@ namespace BombPlane
             return BombResult.none;
         }
 
-        private void TurnIdle()
-        {
-            state = GameState.idle;
-            _numOfHitPlane = 0;
-        }
-
-
-
-        private static string Receive(Socket socket) //接收客户端数据
-        {
-            try
-            {
-                byte[] buffer = new byte[1024];
-                int len = socket.Receive(buffer);
-                return Encoding.Unicode.GetString(buffer, 0, len);
-            }
-            catch (SocketException e) { throw new ReceiveExpection(e); }
-        }
-
-        private static void Send(Socket socket, string text) // 向客户端发送数据
-        {
-            try
-            {
-                byte[] buffer = Encoding.Unicode.GetBytes(text);    //将字符串转成字节格式发送
-                socket.Send(buffer);  //调用Send()向客户端发送数据
-            }
-            catch (SocketException e) { throw new SendException(e); }
-        }
-
-        private int _port;
-        private Plane[]? _planes;
-        private Random random = new();
-        private int _numOfHitPlane;
-        private GameState state = GameState.idle;
-
-        private Socket _socketListen = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
-        private Thread? _threadListen;     //声明线程
+        private void TurnIdle() { state = GameState.idle; }
     }
 }

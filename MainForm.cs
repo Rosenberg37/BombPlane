@@ -3,10 +3,8 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using Microsoft.VisualBasic;
-using System.Xml.Linq;
-using System.Numerics;
-using System.Diagnostics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using System.Net.WebSockets;
+
 
 namespace BombPlane
 {
@@ -18,14 +16,6 @@ namespace BombPlane
 
             // Let threads able to control the MainFrom controls;
             CheckForIllegalCrossThreadCalls = false;
-
-            _listenCTS = new CancellationTokenSource();
-            _listenCTS.Token.Register(() =>
-            {
-                _listenThread = null;
-                _listenSocket.Close();
-                _listenSocket = null;
-            });
 
             _flushCTS = new CancellationTokenSource();
             _flushCTS.Token.Register(() =>
@@ -39,7 +29,9 @@ namespace BombPlane
                 _delegateThread = null;
             });
 
-            ListenPort = 2000;
+            listenServer = new Server("风居住的街道", "小鸡炖蘑菇", "天王盖地虎", 2000);
+            listenServer.Connected += GameConnected;
+
             _travelPorts.Add(2001);
             _networkPrefix = "192.168.6";
 
@@ -55,52 +47,11 @@ namespace BombPlane
         private Thread? _flushThread;
         CancellationTokenSource? _flushCTS;
 
-        private string _userName = "Default";
-        private string _watchword = "小鸡炖蘑菇";
-        private string _watchwordHint = "天王盖地虎";
+        private readonly Server listenServer;
 
         private string _networkPrefix;
         private List<int> _travelPorts = new();
 
-        private int _listenPort = -1;
-        private int ListenPort
-        {
-            get { return _listenPort; }
-            set
-            {
-                try
-                {
-                    if (_listenThread != null)
-                        _listenCTS.Cancel();
-
-                    _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    _listenSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, -300);
-
-                    //1.绑定IP和Port
-                    IPEndPoint iPEndPoint = new(IPAddress.Any, value);
-                    //2.使用Bind()进行绑定
-                    _listenSocket.Bind(iPEndPoint);
-                    //3.开启监听
-                    _listenSocket.Listen(256); //Listen(int backlog); backlog:监听数量 
-
-                    //开启线程Accept进行通信的客户端socket
-                    _listenThread = new Thread(Listen)
-                    {
-                        IsBackground = true    //运行线程在后台执行
-                    };   //线程绑定Listen函数
-                    _listenThread.Start(_listenCTS.Token);    //Start里面的参数是Listen函数所需要的参数
-
-                    _listenPort = value;
-                }
-                catch (SocketException)
-                {
-                    MessageBox.Show("监听程序启动失败，请尝试重新设置监听端口");
-                }
-            }
-        }
-        private Socket _listenSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
-        private Thread? _listenThread;     //声明线程
-        private CancellationTokenSource? _listenCTS;
 
         private Socket? _communicateSocket; //负责通信的socket
         private Thread? _communicateThread;
@@ -114,39 +65,19 @@ namespace BombPlane
 
         private int _count = 0;
 
-
-        private static string Receive(Socket socket) //接收客户端数据
+        private void GameConnected(object sender, EventArgs e)
         {
-            try
-            {
-                byte[] buffer = new byte[1024];
-                int len = socket.Receive(buffer);
-                return Encoding.Unicode.GetString(buffer, 0, len);
-            }
-            catch (SocketException e) { throw new ReceiveExpection(e); }
-        }
+            ConnectedEventArgs args = (ConnectedEventArgs)e;
 
-        private static void Send(Socket socket, string text) // 向客户端发送数据
-        {
-            try
-            {
-                byte[] buffer = Encoding.Unicode.GetBytes(text);    //将字符串转成字节格式发送
-                socket.Send(buffer);  //调用Send()向客户端发送数据
-            }
-            catch (SocketException e) { throw new SendException(e); }
-        }
-
-        private void ConnectGame(string RivalName, Socket socket)
-        {
-            toolStripStatusLabelLeft.Text = RivalName + " connected";
-            if (_communicateSocket != null)
-                _communicateSocket.Close();
-            _communicateSocket = socket;
+            _communicateSocket?.Close();
+            _communicateSocket = args.CommunicateSocket;
             _communicateThread = new Thread(Communicate)
             {
                 IsBackground = true
             };
             _communicateThread.Start();
+
+            toolStripStatusLabelLeft.Text = "连接上了 " + args.RivalName;
             MainButton.Enabled = true;
             StartGameToolStripMenuItem.Enabled = true;
             DisconnectToolStripMenuItem.Enabled = true;
@@ -154,11 +85,11 @@ namespace BombPlane
 
         private void StartGame()
         {
-            if (_communicateSocket == null)
+            if (_communicateSocket == null)  
                 MessageBox.Show("请先选择对手");
             else
             {
-                Send(_communicateSocket, "StartGame");
+                Utility.Send(_communicateSocket, "StartGame");
                 statusStrip.Items[2].Text = "等待对方回应";
                 MainButton.Enabled = false;
                 StartGameToolStripMenuItem.Enabled = false;
@@ -173,7 +104,7 @@ namespace BombPlane
                 MessageBox.Show("当前飞机位置不合法，请避免飞机重叠");
             else
             {
-                Send(_communicateSocket, "FinishPrepare");
+                Utility.Send(_communicateSocket, "FinishPrepare");
                 statusStrip.Items[2].Text = "等待对手完成准备";
                 MainButton.Enabled = false;
                 FinishPrepareToolStripMenuItem.Enabled = false;
@@ -221,32 +152,33 @@ namespace BombPlane
 
         private void Bomb(Point? point)
         {
-            try
+            if (point == null)
+                MessageBox.Show("请先点击选择轰炸的点");
+            else
             {
-                if (point == null)
-                    MessageBox.Show("请先点击选择轰炸的点");
-                else
-                {
-                    int? Y = gridNetworkCounterSide.SelectedButtonY;
-                    int? X = gridNetworkCounterSide.SelectedButtonX;
-                    string pos = GridView.ConvertPointToString((int)X, (int)Y);
-                    Send(_communicateSocket, string.Format("GetBombResult {0}", pos));
-                    MainButton.Enabled = false;
-                    BombToolStripMenuItem.Enabled = false;
-                    AssistToolStripMenuItem.Enabled = false;
-                }
+                int? Y = gridNetworkCounterSide.SelectedButtonY;
+                int? X = gridNetworkCounterSide.SelectedButtonX;
+                string pos = GridView.ConvertPointToString((int)X, (int)Y);
+                Utility.Send(_communicateSocket, string.Format("GetBombResult {0}", pos));
+                MainButton.Enabled = false;
+                BombToolStripMenuItem.Enabled = false;
+                AssistToolStripMenuItem.Enabled = false;
             }
+        }
+
+        private void Bomb()
+        {
+            try
+            { Bomb(gridNetworkCounterSide.GetBombPoint()); }
             catch (DuplicatedSelectionException)
             {
                 MessageBox.Show("选定轰炸位置不合理，请不要选择轰炸过的位置");
             }
         }
 
-        private void Bomb() { Bomb(gridNetworkCounterSide.GetBombPoint()); }
-
         private void GameOver()
         {
-            Send(_communicateSocket, "GameOver");
+            Utility.Send(_communicateSocket, "GameOver");
             TurnIdle();
             MessageBox.Show("你获得了胜利");
         }
@@ -281,7 +213,7 @@ namespace BombPlane
                         {
                             foreach (int port in _travelPorts)
                             {
-                                if (Array.IndexOf(SelfIPs, ip) != -1 && port == ListenPort)
+                                if (Array.IndexOf(SelfIPs, ip) != -1 && port == listenServer.ListenPort)
                                     break;
 
                                 Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -291,9 +223,9 @@ namespace BombPlane
                                 {
                                     socket.Connect(ipEndPoint);
 
-                                    Send(socket, "GetName");
+                                    Utility.Send(socket, "GetName");
                                     //接收数据
-                                    string name = Receive(socket);
+                                    string name = Utility.Receive(socket);
 
                                     bool find = false;
                                     foreach (ListViewItem item in listView.Items)
@@ -312,7 +244,7 @@ namespace BombPlane
                                         listView.Items.Add(viewItem);
                                     }
 
-                                    Send(socket, "Close");
+                                    Utility.Send(socket, "Close");
                                     socket.Close();
                                 }
                                 catch { }
@@ -328,68 +260,13 @@ namespace BombPlane
             thread.Start();
         }
 
-        private void Listen(object obj) //建立与客户端的连接
-        {
-            CancellationToken ct = (CancellationToken)obj;
-
-            while (!ct.IsCancellationRequested)
-            {
-                try
-                {
-                    //4.阻塞到有client连接，得到用于socket的连接
-                    Socket socketAccept = _listenSocket.Accept();
-                    if (_communicateSocket != null)
-                        Send(socketAccept, "Busy");
-
-                    string command = Receive(socketAccept);
-                    string[] strs = command.Split(' ');
-                    switch (strs[0])
-                    {
-                        case "GetName":
-                            Send(socketAccept, _userName);
-                            socketAccept.Close();
-                            break;
-                        case "Connect":
-                            if (_watchwordHint.Length > 0 && _watchword.Length > 0)
-                            {
-                                Send(socketAccept, "WatchwordHint " + _watchwordHint);
-                                if (Receive(socketAccept) == _watchword)
-                                {
-                                    Send(socketAccept, "Accept");
-                                    string name = strs[1];
-                                    ConnectGame(name, socketAccept);
-                                    MessageBox.Show("收到了来自" + name + "的连接请求，对方通过了口令验证并连接成功");
-                                }
-                                else
-                                {
-                                    Send(socketAccept, "Reject");
-                                    socketAccept.Close();
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                Send(socketAccept, "Accept");
-                                string name = strs[1];
-                                ConnectGame(name, socketAccept);
-                                MessageBox.Show("收到了来自" + name + "的连接请求，已自动连接成功");
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                catch (SocketException) { }
-            }
-        }
-
         private void Communicate()
         {
             try
             {
                 while (true)
                 {
-                    string command = Receive(_communicateSocket);
+                    string command = Utility.Receive(_communicateSocket);
                     string[] strs = command.Split(' ');
 
                     switch (strs[0])
@@ -399,11 +276,11 @@ namespace BombPlane
                             DialogResult dr = MessageBox.Show("对方发起了游戏请求，是否接受", "开始游戏", messButton);
                             if (dr == DialogResult.OK)
                             {
-                                Send(_communicateSocket, "GameAccept");
+                                Utility.Send(_communicateSocket, "GameAccept");
                                 TurnPrepare();
                             }
                             else
-                                Send(_communicateSocket, "GameReject");
+                                Utility.Send(_communicateSocket, "GameReject");
                             break;
                         case "GameAccept":
                             TurnPrepare();
@@ -423,7 +300,7 @@ namespace BombPlane
 
                             Point bombPoint = GridView.ConvertStringToPoint(strs[1]);
                             BombResult result = gridNetworkOurSide.BombAndDraw(bombPoint);
-                            Send(_communicateSocket, "BombResult " + strs[1] + " " + result.ToString());
+                            Utility.Send(_communicateSocket, "BombResult " + strs[1] + " " + result.ToString());
                             if (state == GameState.wait)
                                 TurnGame();
                             else
@@ -462,7 +339,7 @@ namespace BombPlane
                             _communicateSocket = null;
                             return;
                         default:
-                            Send(_communicateSocket, "Unexpected command");
+                            Utility.Send(_communicateSocket, "Unexpected command");
                             break;
                     }
                 }
@@ -514,32 +391,47 @@ namespace BombPlane
                     //设置请求超时
                     clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, -300);
                     //用socket对象的Connect()方法以上面建立的IPEndPoint对象做为参数，向服务器发出连接请求
-                    Send(clientSocket, "Connect " + _userName);
+                    Utility.Send(clientSocket, "Connect " + listenServer.UserName);
 
-                    string command = Receive(clientSocket);
+                    string command = Utility.Receive(clientSocket);
                     string[] strs = command.Split(' ');
                     if (strs[0] == "WatchwordHint")
                     {
                         string input = Interaction.InputBox("口令提示：" + strs[1], "请输入口令");
                         if (input.Length != 0)
                         {
-                            Send(clientSocket, input);
-                            string result = Receive(clientSocket);
+                            Utility.Send(clientSocket, input);
+                            string result = Utility.Receive(clientSocket);
                             if (result != "Accept")
                                 MessageBox.Show("连接失败，口令错误");
                             else
-                                ConnectGame(name, clientSocket);
+                            {
+                                ConnectedEventArgs args = new()
+                                {
+                                    RivalName = name,
+                                    CommunicateSocket = clientSocket
+                                };
+                                GameConnected(this, args);
+                            }
+                                
                         }
                         else
                         {
-                            Send(clientSocket, "Close");
+                            Utility.Send(clientSocket, "Close");
                             MessageBox.Show("连接失败，未输入口令");
                         }
                     }
                     else if (strs[0] == "Busy")
                         MessageBox.Show("对方正在忙");
                     else if (strs[0] == "Accept")
-                        ConnectGame(name, clientSocket);
+                    {
+                        ConnectedEventArgs args = new()
+                        {
+                            RivalName = name,
+                            CommunicateSocket = clientSocket
+                        };
+                        GameConnected(this, args);
+                    }
                     else
                         MessageBox.Show("连接失败了");
                 }
@@ -619,9 +511,9 @@ namespace BombPlane
 
         private void UserNameSettingToolStripMenuItemClick(object sender, EventArgs e)
         {
-            string input = Interaction.InputBox("当前用户名：" + _userName, "请输入用户名", _userName);
+            string input = Interaction.InputBox("当前用户名：" + listenServer.UserName, "请输入用户名", listenServer.UserName);
             if (input.Length != 0)
-                _userName = input;
+                listenServer.UserName = input;
         }
 
         private void TravelPortSettingToolStripMenuItemClick(object sender, EventArgs e)
@@ -679,28 +571,28 @@ namespace BombPlane
 
         private void ListenPortSettingToolStripMenuItemClick(object sender, EventArgs e)
         {
-            string input = Interaction.InputBox("当前监听端口：" + ListenPort, "请输入端口", ListenPort.ToString());
+            string input = Interaction.InputBox("当前监听端口：" + listenServer.ListenPort, "请输入端口", listenServer.ListenPort.ToString());
             if (input.Length != 0)
-                ListenPort = int.Parse(input);
+                listenServer.ListenPort = int.Parse(input);
         }
 
         private void WatchwordSettingToolStripMenuItemClick(object sender, EventArgs e)
         {
-            string input = Interaction.InputBox("当前口令：" + _watchword, "请输入口令", _watchword);
+            string input = Interaction.InputBox("当前口令：" + listenServer.Watchword, "请输入口令", listenServer.Watchword);
             if (input.Length != 0)
-                _watchword = input;
+                listenServer.Watchword = input;
         }
 
         private void WatchwordHintSettingToolStripMenuItemClick(object sender, EventArgs e)
         {
-            string input = Interaction.InputBox("当前口令提示：" + _watchwordHint, "请输入口令提示", _watchwordHint);
+            string input = Interaction.InputBox("当前口令提示：" + listenServer.WatchwordHint, "请输入口令提示", listenServer.WatchwordHint);
             if (input.Length != 0)
-                _watchwordHint = input;
+                listenServer.WatchwordHint = input;
         }
 
         private void UserNameHelpToolStripMenuItemClick(object sender, EventArgs e)
         {
-            MessageBox.Show("当前用户名：" + _userName + "\n用户名可以在设置选项中设置，影响其他客户端扫描时显示的用户名");
+            MessageBox.Show("当前用户名：" + listenServer.UserName + "\n用户名可以在设置选项中设置，影响其他客户端扫描时显示的用户名");
         }
 
         private void PortAndNetworkHelpToolStripMenuItemClick(object sender, EventArgs e)
@@ -786,19 +678,9 @@ namespace BombPlane
                 dialog.Filter = "所有文件|*.exe";
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    Process process = new();
-                    process.StartInfo.FileName = dialog.FileName;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.RedirectStandardInput = true;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.RedirectStandardError = true;
-                    process.StartInfo.CreateNoWindow = true;
-
                     try
                     {
-                        process.Start();
-                        process.WaitForExit();
-                        if (process.StandardOutput.ReadToEnd() == "BombPlane")
+                        if (Utility.Execute(dialog.FileName) == "BombPlane")
                             _delegateProgram = dialog.FileName;
                         else
                             MessageBox.Show("不是有效的代理程序");
@@ -808,47 +690,27 @@ namespace BombPlane
             }
         }
 
-        private void DelegateInitializeToolStripMenuItem_Click(object sender, EventArgs e)
+        private void DelegateInitializeToolStripMenuItemClick(object sender, EventArgs e)
         {
-            Process process = new();
-            process.StartInfo.FileName = _delegateProgram;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardInput = true;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.Arguments = "Initialize";
-
             try
             {
-                process.Start();
-                process.WaitForExit();
+                string str = Utility.Execute(_delegateProgram, "Initialize");
+                string[] strs = str.Split(' ');
+                List<Plane> planes = new();
+                for (int i = 0; i < 3; i++)
+                {
+                    Direction direction = (Direction)Enum.Parse(typeof(Direction), strs[i * 2], true);
+                    Point point = GridView.ConvertStringToPoint(strs[i * 2] + 1);
+                    planes.Add(new Plane(direction, point));
+                }
+
+                gridNetworkOurSide.Planes = planes.ToArray();
             }
             catch { MessageBox.Show("代理程序启动失败"); }
-
-            string str = process.StandardOutput.ReadToEnd();
-            string[] strs = str.Split(' ');
-            List<Plane> planes = new();
-            for (int i = 0; i < 3; i++)
-            {
-                Direction direction = (Direction)Enum.Parse(typeof(Direction), strs[i * 2], true);
-                Point point = GridView.ConvertStringToPoint(strs[i * 2] + 1);
-                planes.Add(new Plane(direction, point));
-            }
-
-            gridNetworkOurSide.Planes = planes.ToArray();
         }
 
         private void DelegateBombToolStripMenuItemClick(object sender, EventArgs e)
         {
-            Process process = new();
-            process.StartInfo.FileName = _delegateProgram;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardInput = true;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
-
             var results = gridNetworkCounterSide.GetCurrentGridStates();
             StringBuilder args = new();
             foreach (var result in results)
@@ -858,18 +720,14 @@ namespace BombPlane
                 args.Append(result.Item2.ToString());
                 args.Append(' ');
             }
-            process.StartInfo.Arguments = args.ToString();
 
             try
             {
-                process.Start();
-                process.WaitForExit();
+                string str = Utility.Execute(_delegateProgram, args.ToString());
+                Point point = GridView.ConvertStringToPoint(str);
+                Bomb(point);
             }
             catch { MessageBox.Show("代理程序启动失败"); }
-
-            string str = process.StandardOutput.ReadToEnd();
-            Point point = GridView.ConvertStringToPoint(str);
-            Bomb(point);
         }
 
         private void DelegateHostToolStripMenuItemClick(object sender, EventArgs e)
@@ -899,35 +757,7 @@ namespace BombPlane
                                 break;
                             case GameState.gaming:
                             case GameState.wait:
-                                Process process = new();
-                                process.StartInfo.FileName = _delegateProgram;
-                                process.StartInfo.UseShellExecute = false;
-                                process.StartInfo.RedirectStandardInput = true;
-                                process.StartInfo.RedirectStandardOutput = true;
-                                process.StartInfo.RedirectStandardError = true;
-                                process.StartInfo.CreateNoWindow = true;
-
-                                var results = gridNetworkCounterSide.GetCurrentGridStates();
-                                StringBuilder args = new();
-                                foreach (var result in results)
-                                {
-                                    args.Append(GridView.ConvertPointToString(result.Item1));
-                                    args.Append(' ');
-                                    args.Append(result.Item2.ToString());
-                                    args.Append(' ');
-                                }
-                                process.StartInfo.Arguments = args.ToString();
-
-                                try
-                                {
-                                    process.Start();
-                                    process.WaitForExit();
-                                }
-                                catch { MessageBox.Show("代理程序启动失败"); }
-
-                                string str = process.StandardOutput.ReadToEnd();
-                                Point point = GridView.ConvertStringToPoint(str);
-                                Bomb(point);
+                                DelegateBombToolStripMenuItemClick(sender, e);
                                 break;
                         }
                         Thread.Sleep(1000);

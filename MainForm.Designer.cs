@@ -71,11 +71,11 @@
             this.BombToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AssistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.代理轰炸ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.DelegateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.用户名说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.端口及网络设置说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.游戏流程说明ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.托管ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.leftTableLayoutPanel.SuspendLayout();
@@ -105,21 +105,21 @@
             this.toolStripStatusLabelLeft.BackColor = System.Drawing.Color.MediumBlue;
             this.toolStripStatusLabelLeft.ForeColor = System.Drawing.SystemColors.Menu;
             this.toolStripStatusLabelLeft.Name = "toolStripStatusLabelLeft";
-            this.toolStripStatusLabelLeft.Size = new System.Drawing.Size(121, 20);
-            this.toolStripStatusLabelLeft.Text = "Not Connected";
+            this.toolStripStatusLabelLeft.Size = new System.Drawing.Size(54, 20);
+            this.toolStripStatusLabelLeft.Text = "未连接";
             // 
             // specialToolStripStatusLabel
             // 
             this.specialToolStripStatusLabel.Name = "specialToolStripStatusLabel";
-            this.specialToolStripStatusLabel.Size = new System.Drawing.Size(1073, 20);
+            this.specialToolStripStatusLabel.Size = new System.Drawing.Size(1098, 20);
             this.specialToolStripStatusLabel.Spring = true;
             // 
             // toolStripStatusLabelRight
             // 
             this.toolStripStatusLabelRight.ForeColor = System.Drawing.SystemColors.Menu;
             this.toolStripStatusLabelRight.Name = "toolStripStatusLabelRight";
-            this.toolStripStatusLabelRight.Size = new System.Drawing.Size(36, 20);
-            this.toolStripStatusLabelRight.Text = "Idle";
+            this.toolStripStatusLabelRight.Size = new System.Drawing.Size(39, 20);
+            this.toolStripStatusLabelRight.Text = "闲置";
             // 
             // mainTableLayoutPanel
             // 
@@ -368,6 +368,7 @@
             this.SetDelegateToolStripMenuItem.Name = "SetDelegateToolStripMenuItem";
             this.SetDelegateToolStripMenuItem.Size = new System.Drawing.Size(212, 26);
             this.SetDelegateToolStripMenuItem.Text = "设置程序代理";
+            this.SetDelegateToolStripMenuItem.Click += new System.EventHandler(this.SetDelegateToolStripMenuItemClick);
             // 
             // 控制ToolStripMenuItem
             // 
@@ -407,7 +408,7 @@
             this.StartGameToolStripMenuItem,
             this.FinishPrepareToolStripMenuItem,
             this.BombToolStripMenuItem,
-            this.托管ToolStripMenuItem});
+            this.DelegateToolStripMenuItem});
             this.游戏ToolStripMenuItem.Name = "游戏ToolStripMenuItem";
             this.游戏ToolStripMenuItem.Size = new System.Drawing.Size(53, 24);
             this.游戏ToolStripMenuItem.Text = "游戏";
@@ -416,7 +417,7 @@
             // 
             this.StartGameToolStripMenuItem.Enabled = false;
             this.StartGameToolStripMenuItem.Name = "StartGameToolStripMenuItem";
-            this.StartGameToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.StartGameToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
             this.StartGameToolStripMenuItem.Text = "开始游戏";
             this.StartGameToolStripMenuItem.Click += new System.EventHandler(this.StartGameToolStripMenuItemClick);
             // 
@@ -427,7 +428,7 @@
             this.DelegateInitializeToolStripMenuItem});
             this.FinishPrepareToolStripMenuItem.Enabled = false;
             this.FinishPrepareToolStripMenuItem.Name = "FinishPrepareToolStripMenuItem";
-            this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.FinishPrepareToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
             this.FinishPrepareToolStripMenuItem.Text = "完成准备";
             this.FinishPrepareToolStripMenuItem.Click += new System.EventHandler(this.FinishPrepareToolStripMenuItemClick);
             // 
@@ -445,7 +446,7 @@
             this.DelegateInitializeToolStripMenuItem.Name = "DelegateInitializeToolStripMenuItem";
             this.DelegateInitializeToolStripMenuItem.Size = new System.Drawing.Size(197, 26);
             this.DelegateInitializeToolStripMenuItem.Text = "代理初始化";
-            this.DelegateInitializeToolStripMenuItem.Click += new System.EventHandler(this.DelegateInitializeToolStripMenuItem_Click);
+            this.DelegateInitializeToolStripMenuItem.Click += new System.EventHandler(this.DelegateInitializeToolStripMenuItemClick);
             // 
             // BombToolStripMenuItem
             // 
@@ -455,7 +456,7 @@
             this.代理轰炸ToolStripMenuItem});
             this.BombToolStripMenuItem.Enabled = false;
             this.BombToolStripMenuItem.Name = "BombToolStripMenuItem";
-            this.BombToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.BombToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
             this.BombToolStripMenuItem.Text = "轰炸";
             this.BombToolStripMenuItem.Click += new System.EventHandler(this.BombToolStripMenuItemClick);
             // 
@@ -474,6 +475,15 @@
             this.代理轰炸ToolStripMenuItem.Size = new System.Drawing.Size(182, 26);
             this.代理轰炸ToolStripMenuItem.Text = "代理轰炸";
             this.代理轰炸ToolStripMenuItem.Click += new System.EventHandler(this.DelegateBombToolStripMenuItemClick);
+            // 
+            // DelegateToolStripMenuItem
+            // 
+            this.DelegateToolStripMenuItem.DoubleClickEnabled = true;
+            this.DelegateToolStripMenuItem.Enabled = false;
+            this.DelegateToolStripMenuItem.Name = "DelegateToolStripMenuItem";
+            this.DelegateToolStripMenuItem.Size = new System.Drawing.Size(152, 26);
+            this.DelegateToolStripMenuItem.Text = "托管";
+            this.DelegateToolStripMenuItem.Click += new System.EventHandler(this.DelegateHostToolStripMenuItemClick);
             // 
             // 帮助ToolStripMenuItem
             // 
@@ -505,15 +515,6 @@
             this.游戏流程说明ToolStripMenuItem.Size = new System.Drawing.Size(227, 26);
             this.游戏流程说明ToolStripMenuItem.Text = "游戏流程说明";
             this.游戏流程说明ToolStripMenuItem.Click += new System.EventHandler(this.GameProcedureHelpToolStripMenuItemClick);
-            // 
-            // 托管ToolStripMenuItem
-            // 
-            this.托管ToolStripMenuItem.DoubleClickEnabled = true;
-            this.托管ToolStripMenuItem.Enabled = false;
-            this.托管ToolStripMenuItem.Name = "托管ToolStripMenuItem";
-            this.托管ToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
-            this.托管ToolStripMenuItem.Text = "托管";
-            this.托管ToolStripMenuItem.Click += new System.EventHandler(this.DelegateHostToolStripMenuItemClick);
             // 
             // BombPLaneForm
             // 
@@ -588,6 +589,6 @@
         private ToolStripMenuItem SetDelegateToolStripMenuItem;
         private ToolStripMenuItem DelegateInitializeToolStripMenuItem;
         private ToolStripMenuItem 代理轰炸ToolStripMenuItem;
-        private ToolStripMenuItem 托管ToolStripMenuItem;
+        private ToolStripMenuItem DelegateToolStripMenuItem;
     }
 }

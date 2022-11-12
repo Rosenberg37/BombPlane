@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,54 +20,56 @@ namespace BombPlane
             HeadPoint = headPoint;
         }
 
+        public bool Conflict(Plane plane) { return plane.Points.Overlaps(Points); }
+
         public Direction direction;
         public Point HeadPoint;
 
         public int HeadX { get { return HeadPoint.X; } set { HeadPoint.X = value; } }
         public int HeadY { get { return HeadPoint.Y; } set { HeadPoint.Y = value; } }
 
+
+        private HashSet<Point> _points;
         public HashSet<Point> Points
         {
             get
             {
-                Point[] points;
-                switch (direction)
+                if (_points == null)
                 {
-                    // direction decide the head of plane fact to;
-                    // rotation is centered on head.
-                    case Direction.Up:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX, HeadY + 1),
-                            new Point(HeadX - 1, HeadY + 1),
-                            new Point(HeadX + 1, HeadY + 1),
-                            new Point(HeadX - 2, HeadY + 1),
-                            new Point(HeadX + 2, HeadY + 1),
-                            new Point(HeadX, HeadY + 2),
-                            new Point(HeadX, HeadY + 3),
-                            new Point(HeadX + 1, HeadY + 3),
-                            new Point(HeadX - 1, HeadY + 3),
-                        };
-                        break;
-                    case Direction.Down:
-                        points = new Point[10]
-                        {
-                            new Point(HeadX, HeadY),
-                            new Point(HeadX, HeadY - 1),
-                            new Point(HeadX - 1, HeadY - 1),
-                            new Point(HeadX + 1, HeadY - 1),
-                            new Point(HeadX - 2, HeadY - 1),
-                            new Point(HeadX + 2, HeadY - 1),
-                            new Point(HeadX, HeadY - 2),
-                            new Point(HeadX, HeadY - 3),
-                            new Point(HeadX + 1, HeadY - 3),
-                            new Point(HeadX - 1, HeadY - 3),
-                        };
-                        break;
-                    case Direction.Left:
-                        points = new Point[10]
-                        {
+                    Point[] points;
+                    switch (direction)
+                    {
+                        // 方向决定了头节点的朝向;旋转是绕着头节点的
+                        case Direction.Up:
+                            points = new Point[10] {
+                                new Point(HeadX, HeadY),
+                                new Point(HeadX, HeadY + 1),
+                                new Point(HeadX - 1, HeadY + 1),
+                                new Point(HeadX + 1, HeadY + 1),
+                                new Point(HeadX - 2, HeadY + 1),
+                                new Point(HeadX + 2, HeadY + 1),
+                                new Point(HeadX, HeadY + 2),
+                                new Point(HeadX, HeadY + 3),
+                                new Point(HeadX + 1, HeadY + 3),
+                                new Point(HeadX - 1, HeadY + 3),
+                            };
+                            break;
+                        case Direction.Down:
+                            points = new Point[10] {
+                                new Point(HeadX, HeadY),
+                                new Point(HeadX, HeadY - 1),
+                                new Point(HeadX - 1, HeadY - 1),
+                                new Point(HeadX + 1, HeadY - 1),
+                                new Point(HeadX - 2, HeadY - 1),
+                                new Point(HeadX + 2, HeadY - 1),
+                                new Point(HeadX, HeadY - 2),
+                                new Point(HeadX, HeadY - 3),
+                                new Point(HeadX + 1, HeadY - 3),
+                                new Point(HeadX - 1, HeadY - 3),
+                            };
+                            break;
+                        case Direction.Left:
+                            points = new Point[10] {
                             new Point(HeadX, HeadY),
                             new Point(HeadX + 1, HeadY),
                             new Point(HeadX + 1, HeadY + 1),
@@ -77,11 +80,10 @@ namespace BombPlane
                             new Point(HeadX + 3, HeadY),
                             new Point(HeadX + 3, HeadY + 1),
                             new Point(HeadX + 3, HeadY - 1),
-                        };
-                        break;
-                    case Direction.Right:
-                        points = new Point[10]
-                        {
+                            };
+                            break;
+                        case Direction.Right:
+                            points = new Point[10] {
                             new Point(HeadX, HeadY),
                             new Point(HeadX - 1, HeadY),
                             new Point(HeadX - 1, HeadY + 1),
@@ -92,16 +94,50 @@ namespace BombPlane
                             new Point(HeadX - 3, HeadY),
                             new Point(HeadX - 3, HeadY + 1),
                             new Point(HeadX - 3, HeadY - 1),
-                        };
-                        break;
-                    default:
-                        points = new Point[10];
-                        break;
+                            };
+                            break;
+                        default:
+                            throw new Exception("Unexpected");
+                    }
+                    _points = new HashSet<Point>(points);
                 }
-                return new HashSet<Point>(points);
+                return _points;
             }
         }
 
+        private HashSet<Point> _bodyPoints;
+        public HashSet<Point> BodyPoints
+        {
+            get
+            {
+                if (_bodyPoints == null)
+                {
+                    _bodyPoints = new(Points);
+                    _bodyPoints.Remove(HeadPoint);
+                }
+                return _bodyPoints;
+            }
+        }
+
+        public static IEnumerable<Plane> BoundedPlanes
+        {
+            get
+            {
+                for (int x = 0; x < GridView.ColumnCount; x++)
+                {
+                    for (int y = 0; y < GridView.RowCount; y++)
+                    {
+                        for (int dir = 0; dir < 4; dir++)
+                        {
+                            Plane plane = new Plane((Direction)dir, x, y);
+                            if (GridView.CheckPlaneBounded(plane))
+                                yield return plane;
+                        }
+                    }
+                }
+                yield break;
+            }
+        }
     }
 
     public enum Direction

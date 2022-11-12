@@ -40,6 +40,7 @@ namespace BombPlane
                 _planes = value;
             }
         }
+        
         private int _selectedPlaneIndex = -1;
         private Plane? SelectedPlane
         {
@@ -84,10 +85,6 @@ namespace BombPlane
             }
         }
 
-        public const int NumOfPlane = 3;
-        public const int RowCount = 10;
-        public const int ColumnCount = 10;
-
         private bool _planeVisible;
         public bool IsPlaneVisible
         {
@@ -121,6 +118,25 @@ namespace BombPlane
             }
         }
 
+        public const int NumOfPlane = 3;
+        public const int RowCount = 10;
+        public const int ColumnCount = 10;
+
+        private static HashSet<Point> _points;
+        public static HashSet<Point> Points
+        {
+            get
+            {
+                if(_points == null)
+                    _points = new HashSet<Point>();
+                    for (int i = 0; i < ColumnCount; i++)
+                        for (int j = 0; j < RowCount; j++)
+                            _points.Add(new Point(i, j));
+
+                return _points;
+            }
+        }
+        
         public static Point ConvertStringToPoint(string str)
         {
             int Y = str[0] - 'A';
@@ -329,7 +345,7 @@ namespace BombPlane
         public static bool CheckPlaneNotConflicted(Plane plane, Plane[] planes)
         {
             foreach (Plane otherPlane in planes)
-                if (!ReferenceEquals(otherPlane, plane) && plane.Points.Intersect(otherPlane.Points).Count() > 0)
+                if (!ReferenceEquals(otherPlane, plane) && plane.Conflict(otherPlane))
                     return false;
             return true;
         }
