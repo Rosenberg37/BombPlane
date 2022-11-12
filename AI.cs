@@ -6,6 +6,7 @@ namespace BombPlane
 {
     using State = HashSet<Plane>;
     using StateSet = HashSet<HashSet<Plane>>;
+    using StateMapping = Dictionary<BombResult, HashSet<HashSet<Plane>>>;
 
     public class AI
     {
@@ -26,23 +27,22 @@ namespace BombPlane
         }
 
 
-        private static Dictionary<Point, Dictionary<BombResult, StateSet>> _stateMapping;
-        public static Dictionary<Point, Dictionary<BombResult, StateSet>> StateMapping
+        private static StateMapping[,] _stateMapping;
+        public static StateMapping[,] StateMapping
         {
             get
             {
                 if (_stateMapping == null)
                 {
-                    _stateMapping = new Dictionary<Point, Dictionary<BombResult, StateSet>>();
+                    _stateMapping = new StateMapping[GridView.ColumnCount, GridView.RowCount];
                     for (int x = 0; x < GridView.ColumnCount; x++)
                     {
                         for (int y = 0; y < GridView.RowCount; y++)
                         {
-                            Point point = new(x, y);
-                            _stateMapping[point] = new Dictionary<BombResult, StateSet>();
-                            _stateMapping[point][BombResult.none] = new StateSet();
-                            _stateMapping[point][BombResult.body] = new StateSet();
-                            _stateMapping[point][BombResult.head] = new StateSet();
+                            _stateMapping[x, y] = new();
+                            _stateMapping[x, y][BombResult.none] = new StateSet();
+                            _stateMapping[x, y][BombResult.body] = new StateSet();
+                            _stateMapping[x, y][BombResult.head] = new StateSet();
                         }
                     }
 
@@ -51,13 +51,13 @@ namespace BombPlane
                         HashSet<Point> points = GridView.Points;
                         foreach (var plane in state)
                         {
-                            _stateMapping[plane.HeadPoint][BombResult.head].Add(state);
+                            _stateMapping[plane.HeadPoint.X, plane.HeadPoint.Y][BombResult.head].Add(state);
                             foreach (var point in plane.BodyPoints)
-                                _stateMapping[point][BombResult.body].Add(state);
+                                _stateMapping[point.X, point.Y][BombResult.body].Add(state);
                             points.ExceptWith(plane.Points);
                         }
                         foreach (var point in points)
-                            _stateMapping[point][BombResult.none].Add(state);
+                            _stateMapping[point.X, point.Y][BombResult.none].Add(state);
                     }
                 }
                 return _stateMapping;
@@ -172,7 +172,7 @@ namespace BombPlane
                             break;
                         case "BombResult":
                             BombResult result = (BombResult)Enum.Parse(typeof(BombResult), strs[2], true);
-                            StateSet states = StateMapping[selectedPoint][result];
+                            StateSet states = StateMapping[selectedPoint.X, selectedPoint.Y][result];
                             remianState.IntersectWith(states);
 
                             if (result == BombResult.head)
@@ -205,15 +205,15 @@ namespace BombPlane
             double maxGain = -1;
             foreach (var point in remainPoints)
             {
-                StateSet noneStates = StateMapping[point][BombResult.none];
+                StateSet noneStates = StateMapping[point.X, point.Y][BombResult.none];
                 StateSet possibleNoneStates = new(remianState.Intersect(noneStates));
                 double p_none = (double)possibleNoneStates.Count / remianState.Count;
 
-                StateSet bodyStates = StateMapping[point][BombResult.body];
+                StateSet bodyStates = StateMapping[point.X, point.Y][BombResult.body];
                 StateSet possibleBodyStates = new(remianState.Intersect(bodyStates));
                 double p_body = (double)possibleBodyStates.Count / remianState.Count;
 
-                StateSet headStates = StateMapping[point][BombResult.none];
+                StateSet headStates = StateMapping[point.X, point.Y][BombResult.none];
                 StateSet possibleHeadStates = new(remianState.Intersect(headStates));
                 double p_head = (double)possibleHeadStates.Count / remianState.Count;
 
