@@ -119,25 +119,8 @@ namespace BombPlane
             }
         }
 
-        public static IEnumerable<Plane> BoundedPlanes
-        {
-            get
-            {
-                for (int x = 0; x < GridView.ColumnCount; x++)
-                {
-                    for (int y = 0; y < GridView.RowCount; y++)
-                    {
-                        for (int dir = 0; dir < 4; dir++)
-                        {
-                            Plane plane = new Plane((Direction)dir, x, y);
-                            if (GridView.CheckPlaneBounded(plane))
-                                yield return plane;
-                        }
-                    }
-                }
-                yield break;
-            }
-        }
+        public const int WingLength = 2;
+        public const int BodyLength = 4;
     }
 
     public enum Direction

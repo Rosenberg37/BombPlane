@@ -11,17 +11,21 @@ namespace BombPlane
     public class AI
     {
 
-        private static StateSet _allState = new StateSet();
+        private static StateSet? _allState;
         public static StateSet AllState
         {
             get
             {
-                if (_allState.Count == 0)
-                    foreach (var plane1 in Plane.BoundedPlanes)
-                        foreach (var plane2 in Plane.BoundedPlanes)
-                            foreach (var plane3 in Plane.BoundedPlanes)
-                                if (!plane2.Conflict(plane1) && !plane3.Conflict(plane2) && !plane3.Conflict(plane1))
-                                    _allState.Add(new State(new Plane[] { plane1, plane2, plane3 }));
+                if (_allState is null)
+                {
+                    _allState = new StateSet();
+                    var planes = new List<Plane>(GridView.BoundedPlanes);
+                    for (int i = 0; i < planes.Count; i++)
+                        for (int j = i + 1; j < planes.Count; j++)
+                            for (int k = j + 1; k < planes.Count; k++)
+                                if (!planes[i].Conflict(planes[j]) && !planes[i].Conflict(planes[k]) && !planes[j].Conflict(planes[k]))
+                                    _allState.Add(new State(new Plane[] { planes[i], planes[j], planes[k] }));
+                }
                 return _allState;
             }
         }
@@ -74,7 +78,6 @@ namespace BombPlane
         private Plane[]? _planes;
         private Random random = new();
         private int numOfHitPlane;
-        private GameState state = GameState.idle;
 
         private Socket _socketListen = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);    //声明用于监听的套接字;
         private Thread? _threadListen;     //声明线程
@@ -178,13 +181,9 @@ namespace BombPlane
                             if (result == BombResult.head)
                                 numOfHitPlane++;
                             if (numOfHitPlane == GridView.NumOfPlane)
-                            {
                                 Utility.Send(acceptSocket, "GameOver");
-                                TurnIdle();
-                            }
                             break;
                         case "GameOver":
-                            TurnIdle();
                             break;
                         case "GetName":
                             Utility.Send(acceptSocket, "AI");
@@ -203,21 +202,22 @@ namespace BombPlane
         private Point SelectPoint()
         {
             double maxGain = -1;
+            int remainStateCount = remianState.Count;
             foreach (var point in remainPoints)
             {
-                StateSet noneStates = StateMapping[point.X, point.Y][BombResult.none];
-                StateSet possibleNoneStates = new(remianState.Intersect(noneStates));
-                double p_none = (double)possibleNoneStates.Count / remianState.Count;
+                var noneStates = StateMapping[point.X, point.Y][BombResult.none];
+                var possibleNoneCount = remianState.Intersect(noneStates);
+                double p_none = (double)possibleNoneCount.Count() / remainStateCount;
 
-                StateSet bodyStates = StateMapping[point.X, point.Y][BombResult.body];
-                StateSet possibleBodyStates = new(remianState.Intersect(bodyStates));
-                double p_body = (double)possibleBodyStates.Count / remianState.Count;
+                var bodyStates = StateMapping[point.X, point.Y][BombResult.body];
+                var possibleBodyStates = remianState.Intersect(bodyStates);
+                double p_body = (double)possibleBodyStates.Count() / remainStateCount;
 
-                StateSet headStates = StateMapping[point.X, point.Y][BombResult.none];
-                StateSet possibleHeadStates = new(remianState.Intersect(headStates));
-                double p_head = (double)possibleHeadStates.Count / remianState.Count;
+                var headStates = StateMapping[point.X, point.Y][BombResult.none];
+                var possibleHeadStates = remianState.Intersect(headStates);
+                double p_head = (double)possibleHeadStates.Count() / remainStateCount;
 
-                double gain = 1 - p_none * p_none - p_body - p_body - p_head * p_head;
+                double gain = 1 - p_none * p_none - p_body * p_body - p_head * p_head;
                 if (gain > maxGain)
                 {
                     maxGain = gain;
@@ -260,7 +260,5 @@ namespace BombPlane
                             return BombResult.body;
             return BombResult.none;
         }
-
-        private void TurnIdle() { state = GameState.idle; }
     }
 }

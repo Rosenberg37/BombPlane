@@ -40,7 +40,7 @@ namespace BombPlane
                 _planes = value;
             }
         }
-        
+
         private int _selectedPlaneIndex = -1;
         private Plane? SelectedPlane
         {
@@ -127,16 +127,35 @@ namespace BombPlane
         {
             get
             {
-                if(_points == null)
+                if (_points == null)
                     _points = new HashSet<Point>();
-                    for (int i = 0; i < ColumnCount; i++)
-                        for (int j = 0; j < RowCount; j++)
-                            _points.Add(new Point(i, j));
+                for (int i = 0; i < ColumnCount; i++)
+                    for (int j = 0; j < RowCount; j++)
+                        _points.Add(new Point(i, j));
 
                 return _points;
             }
         }
-        
+
+        public static IEnumerable<Plane> BoundedPlanes
+        {
+            get
+            {
+                for (int x = Plane.WingLength; x < ColumnCount - Plane.WingLength; x++)
+                    for (int y = 0; y <= RowCount - Plane.BodyLength; y++)
+                        yield return new(Direction.Up, x, y);
+                for (int x = Plane.WingLength; x < ColumnCount - Plane.WingLength; x++)
+                    for (int y = Plane.BodyLength - 1; y < RowCount; y++)
+                        yield return new(Direction.Down, x, y);
+                for (int x = 0; x <= ColumnCount - Plane.BodyLength; x++)
+                    for (int y = Plane.WingLength; y < RowCount - Plane.WingLength; y++)
+                        yield return new(Direction.Left, x, y);
+                for (int x = Plane.BodyLength - 1; x < ColumnCount; x++)
+                    for (int y = Plane.WingLength; y < RowCount - Plane.WingLength; y++)
+                        yield return new(Direction.Right, x, y);
+            }
+        }
+
         public static Point ConvertStringToPoint(string str)
         {
             int Y = str[0] - 'A';
